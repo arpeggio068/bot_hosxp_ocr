@@ -1111,130 +1111,7 @@ Func PtExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
 EndFunc
 ;=============================== end after load exit function ======================================================================
 
-;=============================== start record dental function ======================================================================
-Func SendDental($aArray, $hStartTime, $oLogStudent, $iRow)
-	Local $hWnd
-	While 1
-		Sleep(500)
-		$hWnd = WinGetHandle("HOSxPDentalCareEntryForm")
-		if $hWnd Then
-			Sleep(1000)   ;important to set sleep time before control class appear
-			ExitLoop
-		EndIf
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-	;_ArrayDisplay($aArray, "Row Data")
-	Local $pteeth =  "TcxCustomInnerTextEdit22"
-	Local $pcaries =  "TcxCustomInnerTextEdit21"
-	Local $pfilling = "TcxCustomInnerTextEdit20"
-	Local $pextract = "TcxCustomInnerTextEdit19"
 
-	;Local $dteeth = "TcxCustomInnerTextEdit18"
-    ;Local $dcaries = "TcxCustomInnerTextEdit17"
-    ;Local $dfilling = "TcxCustomInnerTextEdit16"
-    Local $dextract = "TcxCustomInnerTextEdit15"
-
-	;Local $need_sealant = "TcxCustomInnerTextEdit14"
-    Local $need_pfilling = "TcxCustomInnerTextEdit13"
-    ;Local $need_dfilling = "TcxCustomInnerTextEdit12"
-    ;Local $need_dextract = "TcxCustomInnerTextEdit11"
-    Local $need_pextract = "TcxCustomInnerTextEdit6"
-
-	Local $permanent_perma = "TcxCustomInnerTextEdit10"
-	Local $permanent_pros = "TcxCustomInnerTextEdit9"
-	Local $prosthesis_pros = "TcxCustomInnerTextEdit7"
-	Local $need_scaling = "TcxDBCheckBox1"
-
-    If Number($aArray[0]) > 0 Then CtrlSendDt($hWnd,$pteeth,$aArray[0])
-	If Number($aArray[1]) > 0 Then	CtrlSendDt($hWnd,$pcaries,$aArray[1])
-	If Number($aArray[2]) > 0 Then CtrlSendDt($hWnd,$pfilling,$aArray[2])
-	If Number($aArray[3]) > 0 Then CtrlSendDt($hWnd,$pextract,$aArray[3])
-
-	;If Number($aArray[4]) > 0 Then	CtrlSendDt($hWnd,$dteeth,$aArray[4])
-	;If Number($aArray[5]) > 0 Then	CtrlSendDt($hWnd,$dcaries,$aArray[5])
-	;If Number($aArray[6]) > 0 Then CtrlSendDt($hWnd,$dfilling,$aArray[6])
-	CtrlSendDt($hWnd, $dextract, 20)
-
-	;If Number($aArray[8]) > 0 Then CtrlSendDt($hWnd,$need_sealant,$aArray[8])
-	If Number($aArray[4]) > 0 Then CtrlSendDt($hWnd,$need_pfilling,$aArray[4])
-	;If Number($aArray[10]) > 0 Then CtrlSendDt($hWnd,$need_dfilling,$aArray[10])
-	;If Number($aArray[11]) > 0 Then CtrlSendDt($hWnd,$need_dextract,$aArray[11])
-	If Number($aArray[5]) > 0 Then CtrlSendDt($hWnd,$need_pextract,$aArray[5])
-
-	If Number($aArray[6]) > 0 Then CtrlSendDt($hWnd,$permanent_perma,$aArray[6])
-	If Number($aArray[7]) > 0 Then CtrlSendDt($hWnd,$permanent_pros,$aArray[7])
-	If Number($aArray[8]) > 0 Then CtrlSendDt($hWnd,$prosthesis_pros,$aArray[8])
-	If Number($aArray[10]) > 0 Then
-		ControlClick($hWnd, "left", $need_scaling)
-		Sleep(500)
-		Send("{SPACE}") ; กด Spacebar เพื่อติ๊ก/ยกเลิก
-		;ControlSend($hWnd, "", $need_scaling, "{SPACE}")
-    EndIf
-    SelectNeedPros($hWnd, $aArray[9])
-	SelectPtType($hWnd)
-	SelectPlace($hWnd)
-	Local $clk
-	While 1
-		$clk = ControlClick($hWnd, "left","TcxButton3")
-		Sleep(700)
-		If $clk = 1 Then ExitLoop
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-	WinClose($hWnd,"")
-	Return True
-EndFunc
-
-Func SelectPtType($hWnd)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $class_  = "TcxCustomComboBoxInnerEdit12"
-	ControlClick($hWnd, "left", $class_)
-	Sleep(200)
-    Local $iClick = 4
-
-   For $i = 1 To $iClick
-		ControlSend($hWnd, "",$class_ , "{DOWN}")
-		Sleep(200)
-	Next
-EndFunc
-
-Func SelectPlace($hWnd)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $place  = "TcxCustomComboBoxInnerEdit11"
-	ControlClick($hWnd, "left", $place)
-	Sleep(200)
-	For $i = 1 To 2
-		ControlSend($hWnd, "",$place , "{DOWN}")
-		Sleep(200)
-	Next
-EndFunc
-
-Func SelectNeedPros($hWnd, $sNeedProsthesis)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $class_  = "TcxCustomComboBoxInnerEdit10"
-	ControlClick($hWnd, "left", $class_)
-	Sleep(200)
-    Local $iClick = 1
-   Switch Number($sNeedProsthesis)
-		Case 1
-           $iClick = 1
-		Case 2
-			$iClick = 2
-		Case 3
-            $iClick = 3
-		Case 4
-            $iClick = 4
-	    Case Else
-			$iClick = 4
-   EndSwitch
-   For $i = 1 To $iClick
-		ControlSend($hWnd, "",$class_ , "{DOWN}")
-		Sleep(200)
-	Next
-EndFunc
-;===============================  end record dental function ======================================================================
 
 ;=============================== start record Hx function ========================================================================
 Func ChiefComp($aDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
@@ -1321,7 +1198,7 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 
 	While True
 		Sleep(900)
-		if FindToConOCR("telemed อายุน้อยกว่า 40 ปี", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+		if FindToConOCR("TELEMED อายุน้อยกว่า 40 ปี", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
 			ExitLoop
         ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
             _OCRCheckDeadline()
@@ -1378,7 +1255,7 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 
 	While True
 		Sleep(900)
-		if FindToConOCR("telemed อายุ 40 ปีขึ้นไป", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+		if FindToConOCR("TELEMED อายุ 40 ปีขึ้นไป", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
 			ExitLoop
         ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
             _OCRCheckDeadline()
@@ -1462,12 +1339,70 @@ Func CheckSitKrg($sText)
 
 EndFunc
 
+
 Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
+	While True
+		if FindToCon(@ScriptDir&$sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+			FindToClickRt(@ScriptDir&$sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+			Sleep(1200)
+		Else
+			FindToClickRt(@ScriptDir&$sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+			Sleep(1200)
+		EndIf
+        Sleep(500)
+		If FindToCon(@ScriptDir&$sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+	 WEnd
+	 Sleep(1000)
+	 ControlSend($hWndXp, "","" , "q")
+	 Sleep(1000)
+	 Local  $hWndEdit
+	 Local $a = 1
+	 While $a < 10
+		 Sleep(1000)
+		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+		 If $hWndEdit Then
+			 Sleep(1000)
+			 ExitLoop
+		 Else
+			 ;Sleep(1000)
+			 ControlSend($hWndXp, "","" , "q")
+			 Sleep(2000)
+		 EndIf
+		 $a += 1
+	 WEnd
+	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
+	 Sleep(1000)
+	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
+	 Sleep(1200)
+		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
+	 Send("{ENTER}")
+	 WinClose($hWndEdit, "")
+	 Sleep(400)
+     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
+	 Local $b = 1
+	 While $b < 5
+		Sleep(300)
+		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+		if($hWndEdit) Then
+			Sleep(1000)
+			ControlClick($hWndEdit, "left", "TcxButton1")
+			Sleep(1200)
+			WinClose($hWndEdit, "")
+			Sleep(400)
+		EndIf
+		$b += 1
+    WEnd
+	Return True
+EndFunc
+
+
+Func SetZeroPriceOCR($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
     _OCRSetRow($hStartTime, $oLogStudent, $iRow)
     ; Open the service row context menu, then verify Invoice setting before q.
     While True
         _OCRCheckDeadline()
-        If FindToClickRtOCR("ค่าบริการบัตรสุขภาพถ้วนหน้า", $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 60) Then ExitLoop
+        If FindToClickRtOCR("ค่าธรรมเนียมบัตรสุขภาพถ้วนหน้า", $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 60) Then ExitLoop
         Sleep(500)
     WEnd
     Sleep(500)
@@ -1978,7 +1913,7 @@ Func BotLoop()
 		FileWrite($oLogStudentProgress, "Start Click HPI R= "&$i+1&@CRLF)
 		While 1
 			Sleep(500)
-			if FindToClickOCR("การซักประวัติ", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60) Then ExitLoop
+			if FindToClickOCR("ประวัติ [Ctrl+F2]", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60) Then ExitLoop
 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
 		WEnd
 		FileWrite($oLogStudentProgress, "End Click HPI R= "&$i+1&@CRLF)
