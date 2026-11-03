@@ -19,6 +19,7 @@
 #include <Inet.au3>
 #include <CppKeySend.au3>
 
+
 Opt("MouseCoordMode", 1)
 Opt("WinTitleMatchMode", 2)
 HotKeySet("{ESC}", "Hkey")
@@ -87,7 +88,6 @@ Global $iPos1 = -8,  $iPos2 = -8,  $iSize1 = 1552, $iSize2 = 840
 Global $aXpPos = [-8, -8, 1552, 840]
 Global $sHosXp_Title = "BMS-HOSxP XE 4.0"
 Global $sServer_Title = 'AutoIt Server'
-Global $sGoogle_Title = 'Google Chrome'
 Global $logStudent = @ScriptDir &"\BotLog\log_telemed.txt"
 Global $logStudenProgress = @ScriptDir &"\BotLog\log_telemed_progress.txt"
 Global $logPrice = @ScriptDir &"\BotLog\log_telemed_price.txt"
@@ -382,7 +382,7 @@ EndFunc
 
 ;=============== send request nodejs localhost func ======================================
 Func StartServer()
-	Local $aList = WinList($sServer_Title) ;Winlist all hos os
+	Local $aList = WinList($sServer_Title)
 	;_ArrayDisplay($aList)
 	Local $aList_Length = $aList[0][0]
 	If $aList_Length > 0 Then
@@ -616,6 +616,8 @@ Func ShowSciTE()
 	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
 	if $hEcel Then WinSetState($hEcel, "", @SW_SHOW )
 EndFunc
+
+
 
 Func SwapXP()
 		;_ArrayDisplay($aList)
@@ -1639,7 +1641,11 @@ Func BotLoop()
 	;== end hos xp loading loop ===================================
 	   FileWrite($oLogStudentProgress, "End Init Loading Loop R= "&$i+1&@CRLF)
 
-	   ; If  $bTodayAppoint Then ContinueLoop
+	  If  $bTodayAppoint Then
+		   $bTodayAppoint = False
+		   ContinueLoop
+	   EndIf
+
 	  If  $bFinanceLock Then
 		   $bFinanceLock = False
 		   ContinueLoop

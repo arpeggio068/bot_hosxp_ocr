@@ -1,50 +1,36 @@
-Python Thai OCR API — AutoIt connects directly to http://127.0.0.1:3078
-ใช้ PaddleOCR PP-OCRv5 Thai (th_PP-OCRv5_mobile_rec), CPU
-ไม่ใช้ Node.js, ไม่ตรวจชื่อหน้าต่าง, ไม่มีคำสั่งคลิก
+ติดตั้ง: ปิด Python server แล้วแทนที่ OCR/server.py และ OCR/ocr_core.py ด้วยไฟล์ใน ZIP นี้ จากนั้นเปิด start.bat เดิม ไม่ต้องติดตั้ง dependencies เพิ่มบนเครื่องที่ใช้ PaddleOCR ชุดเดิม
 
-ติดตั้งบน Windows:
-1. ใช้ Python 3.12 แบบ 64-bit (แยกจาก conda/env RL เพื่อไม่เปลี่ยน dependency ของงานเดิม)
-2. แตก ZIP เช่น D:\Nodejs_Project\hosxp_python_ocr
-3. ดับเบิลคลิก install.bat หรือเปิด CMD ในโฟลเดอร์แล้วรัน:
-   py -3.12 -m venv .venv
-   .venv\Scripts\python.exe -m pip install --upgrade pip
-   .venv\Scripts\python.exe -m pip install -r requirements.txt
-4. รัน start.bat รอ READY อาจใช้เวลาครั้งแรกเพราะดาวน์โหลดโมเดล
-5. เปิด TestOCR.au3 แล้วกด F1 ที่หน้าจอเป้าหมาย เมาส์เลื่อนไปกลางกรอบข้อความที่ OCR อ่านได้ ไม่มีการคลิก
-6. กด ESC จบ AutoIt / Ctrl+C จบ Python
+การทำงาน:
+1. ตรวจภาพปัจจุบันด้วย OpenCV template cache ใน RAM ก่อน
+2. cache ไม่ผ่าน: อ่านภาพต้นฉบับ ตรวจ exact แล้ว fuzzy (รวมตรวจตำแหน่งใกล้เคียงที่อาจซ้ำ)
+3. ยังไม่พบ: อ่านภาพ contrast อีกหนึ่งแบบ รวมสูงสุด 2 ครั้ง
+4. พบตำแหน่งเดียว: เก็บภาพบรรทัดนั้นเป็น template พร้อมพิกัดกึ่งกลาง
+5. หลายตำแหน่ง: AMBIGUOUS ไม่คลิก
 
-ถ้า py -3.12 ไม่พบ ให้ใช้ python.exe ของ Python 3.12 64-bit ที่ติดตั้งไว้แทน py -3.12
-ถ้า Windows แจ้ง DLL missing ของ Paddle ให้ติดตั้ง Microsoft Visual C++ Redistributable x64 ตามข้อความ error
+cache แยกตามคำค้น confidence และขนาด area เก็บสูงสุด 32 รายการ ล้างเมื่อปิด Python เปลี่ยนตำแหน่งภายใน area ได้ แต่การเปลี่ยนสี/font อาจต้อง OCR ใหม่ CACHE_THRESHOLD=0.97 ใน server.py คือเกณฑ์ความเหมือนภาพ คนละค่ากับ FUZZY_MINIMUM=85.0 ใน ocr_core.py
+cache_score คือคะแนน OpenCV; confidence และ similarity เมื่อ cache hit เป็นค่าจาก OCR ครั้งที่เรียนรู้ template ไม่ใช่การอ่าน OCR ครั้งใหม่
+cache ใช้ตรวจภาพ ไม่สามารถยืนยันว่าไม่มีข้อความอื่นที่หน้าตาคล้ายแต่ไม่เหมือน template ทุกกรณี หากสงสัยผล cache ให้เปิด server ใหม่เพื่อบังคับ OCR
+STRICT_NUMBERS=False ตามความต้องการผู้ใช้ เลขที่คลาดเคลื่อนเข้ารวมคะแนนความคล้าย
 
-การตั้งค่าใน AutoIt:
-$kScreen = 1.25 สำหรับเครื่องพัฒนา 125%; = 1 สำหรับเครื่องจริง 100%
-$aItemTxtPos = [241, 252, 719, 461] ใช้ area เดิม
-แก้คำค้นใน RunTest() ปัจจุบันเป็น เคลือบฟลูออไรด์วานิช
-confidence = 60 หมายถึง 0-100 ของ PaddleOCR ไม่สามารถเทียบตรงกับคะแนน Tesseract
-ไม่มีโหมด blue/gray ให้เลือก โปรแกรมลองภาพเดิม/contrast/กลับสี/adaptive อัตโนมัติเมื่อยังไม่พบ
-ไม่ตรวจจับสีฟ้า ไม่ต้องจับภาพ template เก็บใหม่
-หากพบข้อความเดียวกันหลายกรอบหรือหลายครั้งในกรอบเดียว จะคืน AMBIGUOUS และไม่เลื่อนเมาส์
-ค้นข้อความตรงกันหลังปรับ Unicode/ช่องว่าง รองรับคำค้นอยู่ในข้อความยาว เช่น ... (ในเด็ก)
-ตำแหน่งที่คืนคือกลางกรอบข้อความเต็มที่อ่านได้ ไม่ใช่กรอบย่อยรายตัวอักษร
-ไม่ลบสระ/วรรณยุกต์ ไม่ใช้ fuzzy match
-ถ้า OCR แบ่งคำเป้าหมายเป็นคนละกรอบอาจหาไม่พบ ดู lines ใน terminal เพื่อวิเคราะห์
+response 7 ช่องแรกเดิม: status x y confidence text similarity match_method
+เพิ่มช่อง 8 timings_ms JSON และช่อง 9 source (ocr/opencv_cache) AutoIt เดิมอ่านช่องแรกได้เหมือนเดิม
 
-การทดสอบภาพที่บันทึกไว้ ไม่ต้องเปิด AutoIt:
-.venv\Scripts\python.exe server.py --image "C:\Users\ACER_NB\AppData\Local\Temp\hosxp_ocr_23664.png" --target "เคลือบฟลูออไรด์วานิช"
-แสดงข้อความ confidence กรอบตำแหน่ง และ variant ที่ใช้ใน terminal
+log timings_ms หน่วย milliseconds:
+upload_read_ms: รับ PNG จาก HTTP (ไม่รวม AutoIt จับภาพ/เขียนไฟล์)
+decode_ms: แปลง PNG
+cache_ms: OpenCV cache lookup
+preprocess_ms: เตรียมภาพ
+ocr_ms: PaddleOCR รวมทุกรอบ
+exact_ms: เทียบตรงตัว
+fuzzy_ms: เทียบข้อความใกล้เคียง
+request_before_reply_ms: รับภาพถึงก่อนส่ง response ไม่รวม network ส่งกลับ
+seconds: decode ถึงได้ผล หน่วยวินาที
 
-Local / Offline:
-ภาพส่งเฉพาะ localhost ไป Python ในเครื่อง ไม่ส่งไป OCR cloud
-ต้องมี Internet ตอนติดตั้งแพ็กเกจและดาวน์โหลดโมเดลครั้งแรก
-Paddle cache โมเดลไว้ตามปกติที่ %USERPROFILE%\.paddlex\official_models
-หลังดาวน์โหลดแล้ว สามารถคัดลอกโฟลเดอร์โมเดลทั้งสองไป:
-models\PP-OCRv5_mobile_det\
-models\th_PP-OCRv5_mobile_rec\
-server จะใช้โฟลเดอร์ local เหล่านี้ก่อน (ต้องเป็นโฟลเดอร์โมเดลสมบูรณ์ มี inference.json และไฟล์ประกอบ)
-อย่าลบ cache หรือโมเดลเมื่อใช้งาน offline และต้องทดสอบ restart แบบตัด net หนึ่งครั้ง
+วัดเวลารวมบน AutoIt เพิ่มรอบคำสั่งทดสอบ:
+Local $hMeasure = TimerInit()
+TestToClickOCR("การซักประวัติ", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60)
+ConsoleWrite("AutoIt total_ms=" & Round(TimerDiff($hMeasure), 2) & @CRLF)
 
-ข้อจำกัดการตรวจสอบชุดนี้:
-ตรวจ syntax Python, matching/coordinate logic และ HTTP ด้วย backend จำลอง
-ยังไม่ได้รันโมเดล PaddleOCR จริงหรือ AutoIt บน Windows จึงยังไม่ยืนยันผลกับภาพ HOSxP
-เลือกโมเดลไทยโดยตรงจากโครงการ PaddleOCR แต่ไม่รับรองว่าจะอ่านทุก font/สีถูกทุกครั้ง
-การลองภาพหลายแบบเพิ่มเวลาประมวลผลเฉพาะเมื่อรอบก่อนยังไม่พบ
+หากใช้บอท _FindOCR ที่มี cache ภาพตรงกันทั้ง area อยู่แล้ว อาจข้าม Python ไปเลย ทำให้ไม่เห็น request ใน Python log นั่นเป็นพฤติกรรมปกติ ใช้ TestToClickOCR ที่ส่งทุกครั้งเพื่อวัด Python cache โดยตรง
+
+ทดสอบครั้งแรก source=ocr จากนั้นทดสอบคำเดิม source=opencv_cache เปรียบเทียบ seconds และ timings_ms การอ่านครั้งแรกยังขึ้นกับขนาด area และ CPU ไม่รับประกันเวลาคงที่

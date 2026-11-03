@@ -13,21 +13,33 @@ Global $aItemTxtPos = [241, 252, 719, 461]  ;item txt position
 HotKeySet("{F1}", "RunTest")
 HotKeySet("{ESC}", "StopTest")
 ToolTip("OCR Test: F1 = test / ESC = exit", 10, 10)
+
 While True
     Sleep(100)
 WEnd
+
 Func RunTest()
     If $bTesting Then Return
     $bTesting = True
     ToolTip("")
-    TestToClick("เคลือบฟลูออไรด์วานิช",$aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
+    TestToClickOCR("TELEMED อายุ 40 ปีขึ้นไป",$aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
     $bTesting = False
 EndFunc
 ; $minConfidence เป็นค่า OCR 0-100 ไม่ใช่ค่า tolerance ของ OpenCV
 ; คืน True เมื่อพบหนึ่งตำแหน่งและเลื่อนเมาส์แล้วเท่านั้น ไม่มีการคลิก
-Func TestToClick($sTarget = "เพิ่มหัตถการ", $x1 = 170, $y1 = 118, $x2 = 546, $y2 = 241, $minConfidence = 60)
+Func TestToClickOCR($sTarget = "เพิ่มหัตถการ", $x1 = 170, $y1 = 118, $x2 = 546, $y2 = 241, $minConfidence = 60)
     If $x2 <= $x1 Or $y2 <= $y1 Then Return SetError(1, 0, False)
-    Local $sImage = @TempDir & "\hosxp_ocr_" & @AutoItPID & ".png"
+
+    Local $sOcrDir = @ScriptDir & "\TempOCR"
+
+	If Not FileExists($sOcrDir) Then
+		If Not DirCreate($sOcrDir) Then
+			ConsoleWrite("OCR: สร้างโฟลเดอร์ไม่สำเร็จ: " & $sOcrDir & @CRLF)
+			Return SetError(2, 0, False)
+		EndIf
+	EndIf
+
+    Local $sImage = $sOcrDir & "\hosxp_ocr_" & @AutoItPID & ".png"
     Local $iLeft = Round($x1 * $kScreen), $iTop = Round($y1 * $kScreen)
     Local $iRight = Round($x2 * $kScreen), $iBottom = Round($y2 * $kScreen)
     FileDelete($sImage)
@@ -71,13 +83,15 @@ Func TestToClick($sTarget = "เพิ่มหัตถการ", $x1 = 170, $
     Local $realX = Round(($iLeft + Number($aResult[1])) / $kScreen)
     Local $realY = Round(($iTop + Number($aResult[2])) / $kScreen)
     MouseMove($realX, $realY, 10)
-    ToolTip("Found: " & $sTarget & " | confidence=" & Round(Number($aResult[3]), 1) & " | x=" & $realX & " y=" & $realY)
+    ; ToolTip("Found: " & $sTarget & " | confidence=" & Round(Number($aResult[3]), 1) & " | x=" & $realX & " y=" & $realY)
     Return True
 EndFunc
+
 Func HttpError($oError)
     $gHttpFailed = True
     ConsoleWrite("HTTP COM error: " & $oError.description & @CRLF)
 EndFunc
+
 Func StopTest()
     ToolTip("")
     Exit
