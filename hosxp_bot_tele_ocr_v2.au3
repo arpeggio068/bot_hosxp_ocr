@@ -83,7 +83,7 @@ Global $iStartRow = $iDefaultValue5
 Global $iEndRow = $iDefaultValue6
 Global $iSleepAfterLoad = $iDefaultValue7
 ;=============================== end GUI config ========================================================================
-Global Const $kScreen = 1.25 ; เครื่องพัฒนา 125% = 1.25 / เครื่องจริง 100% = 1
+Global Const $kScreen = 1 ; เครื่องพัฒนา 125% = 1.25 / เครื่องจริง 100% = 1
 Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
 Global $iPos1 = -8,  $iPos2 = -8,  $iSize1 = 1552, $iSize2 = 840
 Global $aXpPos = [-8, -8, 1552, 840]
@@ -654,20 +654,55 @@ Func _OCRFindPythonPID()
     Return 0
 EndFunc
 
+
 Func StopServer()
-    ;Winlist all hos os
+    ; ปิดหน้าต่าง Node.js server ตาม title เดิม
+    Local $aList = WinList($sServer_Title) ;Winlist all hos os
     ;_ArrayDisplay($aList)
-    ; Kill only the server process trees selected/started by StartServer.
-    ; Do not kill all node.exe/python.exe processes on the machine.
-    If $gOcrPythonPID = 0 Then $gOcrPythonPID = _OCRFindPythonPID()
-    If $gOcrPythonPID > 0 And ProcessExists($gOcrPythonPID) Then RunWait('"' & @ComSpec & '" /d /c taskkill /PID ' & Int($gOcrPythonPID) & ' /T /F', "", @SW_HIDE)
-    If $gOcrNodePID > 0 And ProcessExists($gOcrNodePID) Then RunWait('"' & @ComSpec & '" /d /c taskkill /PID ' & Int($gOcrNodePID) & ' /T /F', "", @SW_HIDE)
-    $gOcrPythonPID = 0
+    Local $aList_Length = $aList[0][0]
+
+    For $i = 1 To $aList_Length
+        Local $sTitle = $aList[$i][0]
+        Local $hHandle = $aList[$i][1]
+
+        If $sTitle <> "" Then
+            WinKill($hHandle)
+            Sleep(300)
+        EndIf
+    Next
+
+    ; ปิด Node.js และรอให้คำสั่งทำงานเสร็จ
+    Local $iNodeExit = RunWait( _
+            '"' & @SystemDir & '\taskkill.exe" /IM node.exe /T /F', _
+            "", @SW_HIDE)
+
+    ConsoleWrite("Node.js taskkill exit code=" & $iNodeExit & @CRLF)
+
+    ; ปิด OCR server ตาม PID
+    If $gOcrPythonPID = 0 Or Not ProcessExists($gOcrPythonPID) Then
+        $gOcrPythonPID = _OCRFindPythonPID()
+    EndIf
+
+    If $gOcrPythonPID > 0 Then
+        Local $iOcrExit = RunWait( _
+                '"' & @SystemDir & '\taskkill.exe" /PID ' & _
+                Int($gOcrPythonPID) & ' /T /F', _
+                "", @SW_HIDE)
+
+        ConsoleWrite("OCR taskkill exit code=" & $iOcrExit & @CRLF)
+
+        If Not ProcessExists($gOcrPythonPID) Then
+            $gOcrPythonPID = 0
+        EndIf
+    Else
+        ConsoleWrite("OCR server ไม่ได้ทำงาน" & @CRLF)
+    EndIf
+
     $gOcrNodePID = 0
     $gOcrCacheKey = ""
     FileDelete(@ScriptDir & "\TempOCR\hosxp_ocr_" & @AutoItPID & ".png")
-    ConsoleWrite("Node.js and OCR server stop requested" & @CRLF)
 EndFunc
+
 
 Func MsgStopServer()
 	Local $iAnswer = MsgBox($MB_OKCANCEL + $MB_ICONQUESTION, _
@@ -678,6 +713,7 @@ Func MsgStopServer()
 		MsgBox($MB_ICONWARNING, "ยกเลิก", "กรุณาปิด server ด้วยตนเอง")
 	EndIf
 EndFunc
+
 
 Func QueryPostgres1($sSQL)
     ;Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
