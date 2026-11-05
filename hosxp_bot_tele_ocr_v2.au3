@@ -142,21 +142,21 @@ Global $aCcPos = [253, 365, 948, 562]
 ;Global $sAddCC =   "\Match\xp_add_cc.png"  ;ไม่ใช้
 Global $sRec_allergy_iden =   "\Match\rec_allergy_iden.png"  ;select box การแพ้ยา
 Global $aRecAllergyPos = [166, 186, 931, 390]
-Global $sAddHPI = "\Match\xp_add_hpi.png"    ; add hpi menu pic
-Global $aAddHPIPos = [92, 101, 420, 249]
+Global $sAddHPI = "\Match\xp_add_hpi.png"    ; add hpi menu pic ทดสอบไม่ใช้ เปลี่ยนเป็น Ctrl F2
+Global $aAddHPIPos = [92, 101, 420, 249]    ; ทดสอบไม่ใช้ เปลี่ยนเป็น Ctrl F2
 
 Global $sF4 =   "\Match\xp_f4_click.png"  ;ปุ่มหัตถการ test no use
 Global $aF4Pos = [8, 652,246, 872]
 Global $sAddItem =   "\Match\xp_add_item.png"  ;ปุ่มเครืองหมายบวกเพิ่มหัตถการ test no use
 Global $aAddItemBtnPos = [177, 190, 629, 489]
-Global $sTeleItem40Down =   "\Match\xp_item_found_telemed40down.png"  ;ข้อความ telemed < 40 y
-Global $sTeleItem40Up =   "\Match\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y
+Global $sTeleItem40Down =   "\Match\xp_item_found_telemed40down.png"  ;ข้อความ telemed < 40 y ทดสอบไม่ใช้ replace with OCR
+Global $sTeleItem40Up =   "\Match\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y ทดสอบไม่ใช้  replace with OCR
 Global $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 
 
 Global $sSaveItem =   "\Match\xp_item_save.png"   ;ปุ่มติ๊กถูกในวงกลมสีเขียว สำหรับบันทึกหัตถการ no use
 Global $aSaveItemBtnPos = [1012, 580, 1763, 994]  ; save item btn position
-Global $sTask =   "\Match\xp_task_on_item.png"   ;เมนู Task สีเขียว nouse
+Global $sTask =   "\Match\xp_task_on_item.png"   ;เมนู Task สีเขียว no use
 Global $aTaskPos = [351, 471, 848, 865]
 Global $sOpdPrice30_1 =   "\Match\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
 Global $sOpdPrice30_2 =   "\Match\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
@@ -1605,6 +1605,7 @@ Func Click_F1($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	Return True
 EndFunc
 
+
 Func Click_F4($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	If Not WinExists($hWndXp) Then
 		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
@@ -1627,6 +1628,28 @@ Func Click_F4($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	Return True
 EndFunc
 
+
+Func Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	Local $hStartTime = TimerInit()
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "Ctrl F2 cancelled: the active window changed.")
+		Return False
+	EndIf
+	_Cpp_ctrlF2()
+	Sleep(500)
+	Return True
+EndFunc
 
 
 Func ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $iRow)
@@ -1911,24 +1934,25 @@ Func BotLoop()
 		ContXp2()
 
 		FileWrite($oLogStudentProgress, "Start Click HPI R= "&$i+1&@CRLF)
-		While 1
-			Sleep(500)
-			if FindToClickOCR("ประวัติ [Ctrl+F2]", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60) Then ExitLoop
-			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
-		WEnd
+		Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $i + 1)
+;~ 		While 1
+;~ 			Sleep(500)
+;~ 			if FindToClickOCR("ประวัติ [Ctrl+F2]", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60) Then ExitLoop
+;~ 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
+;~ 		WEnd
 		FileWrite($oLogStudentProgress, "End Click HPI R= "&$i+1&@CRLF)
 
 		FileWrite($oLogStudentProgress, "Start Add HPI Text R= "&$i+1&@CRLF)
 		Local $hMemo = 0
 
 		While Not $hMemo
-			Sleep(1000)
+			Sleep(700)
 			$hMemo = ControlGetHandle($hWndXp, "", "[CLASSNN:TcxCustomInnerMemo2]")
 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
 		WEnd
 
 		While Not _WinAPI_IsWindowVisible($hMemo)
-			Sleep(1000)
+			Sleep(700)
 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
 		WEnd
 

@@ -114,6 +114,28 @@ Func Click_F4($hWndXp)
 	Return True
 EndFunc
 
+Func Ctrl_F2($hWndXp)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	Local $hStartTime = TimerInit()
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "F1 cancelled: the active window changed.")
+		Return False
+	EndIf
+	_Cpp_ctrlF2()
+	Sleep(1000)
+	Return True
+EndFunc
+
 
 Func ClickAddOperation($hWndXp)
 	Local $sFormTitle = "HOSxPDentalOperationEntryForm"
@@ -170,7 +192,8 @@ EndFunc
 ;~ EndIf
 
 
-
+_CppDllOpen()
 Local $hTestWnd = WinGetHandle($sHosXp_Title)
-ClickAddOperation($hTestWnd)
+Ctrl_F2($hTestWnd)
+_CppDllClose()
 Exit(0)

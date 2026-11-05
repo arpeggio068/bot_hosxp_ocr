@@ -19,7 +19,7 @@ Func  _Cpp_ctrlV()
             MsgBox(16, "DLL Call Error", "Error calling SimulateCtrlV")
         Else
             ;MsgBox(64, "Success", "SimulateCtrlV executed successfully!")
-			ConsoleWrite("OK")
+			ConsoleWrite("SimulateCtrlV OK")
         EndIf
 EndFunc
 
@@ -29,7 +29,7 @@ Func  _Cpp_ctrlA()
             MsgBox(16, "DLL Call Error", "Error calling SimulateCtrlA")
         Else
             ;MsgBox(64, "Success", "SimulateCtrlV executed successfully!")
-			ConsoleWrite("OK")
+			ConsoleWrite("SimulateCtrlA OK")
         EndIf
 EndFunc
 
@@ -39,7 +39,17 @@ Func  _Cpp_ctrlC()
             MsgBox(16, "DLL Call Error", "Error calling SimulateCtrlC")
         Else
             ;MsgBox(64, "Success", "SimulateCtrlV executed successfully!")
-			ConsoleWrite("OK")
+			ConsoleWrite("SimulateCtrlC OK")
+        EndIf
+EndFunc
+
+Func  _Cpp_ctrlF2()
+     Local $aResult = DllCall($hDLL, "none", "SimulateCtrlF2")
+        If @error Then
+            MsgBox(16, "DLL Call Error", "Error calling SimulateCtrlF2")
+        Else
+            ;MsgBox(64, "Success", "SimulateCtrlV executed successfully!")
+			ConsoleWrite("SimulateCtrlF2 OK")
         EndIf
 EndFunc
 
