@@ -1670,7 +1670,6 @@ Func Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $iRow)
 		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
 		Return False
 	EndIf
-	Local $hStartTime = TimerInit()
 	; Activate once if HOSxP is not already active
 	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
 	While Not WinActive($hWndXp)

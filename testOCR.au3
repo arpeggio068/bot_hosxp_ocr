@@ -2,7 +2,7 @@
 #include <ScreenCapture.au3>
 #include <MsgBoxConstants.au3>
 Opt("MouseCoordMode", 1)
-Global Const $kScreen = 1.25 ; เครื่องพัฒนา 125% = 1.25 / เครื่องจริง 100% = 1
+Global Const $kScreen = 1 ; เครื่องพัฒนา 125% = 1.25 / เครื่องจริง 100% = 1
 Global Const $sOcrUrl = "http://127.0.0.1:3078"
 Global $aAddItemBtnPos = [170, 118, 546, 241]
 Global $bTesting = False
