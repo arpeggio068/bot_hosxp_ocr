@@ -83,8 +83,8 @@ Global $iStartRow = $iDefaultValue5
 Global $iEndRow = $iDefaultValue6
 Global $iSleepAfterLoad = $iDefaultValue7
 ;=============================== end GUI config ========================================================================
-Global Const $kScreen = 1 ; เครื่องพัฒนา 125% = 1.25 / เครื่องจริง 100% = 1
-Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
+
+
 Global $iPos1 = -8,  $iPos2 = -8,  $iSize1 = 1552, $iSize2 = 840
 Global $aXpPos = [-8, -8, 1552, 840]
 Global $sHosXp_Title = "BMS-HOSxP XE 4.0"
@@ -111,8 +111,10 @@ Global $gTelegramChatID = ""
 Global $gHTTPTelegram = ObjCreate("WinHttp.WinHttpRequest.5.1")
 Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
 Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
+;=== end telegram  and database request config ===============================================
 
-; OCR v2: confidence 0-100, independent of OpenCV tolerance.
+
+; start OCR v2: confidence 0-100, independent of OpenCV tolerance. ===================================
 Global $gOcrHttpActive = False, $gOcrHttpFailed = False
 Global $gOcrNodePID = 0, $gOcrPythonPID = 0
 Global $gOcrRowTimer = 0, $gOcrRowLog = 0, $gOcrRowNumber = 0
@@ -120,11 +122,12 @@ Global Const $gOcrRequestMs = 60000
 Global Const $gOcrStartupMs = 180000
 Global $gOcrCacheImage = Binary(""), $gOcrCacheKey = "", $gOcrCacheResult = ""
 Global $gOcrLastStatus = ""
+;=== end OCR config ===============================================
 
-;=== end telegram  and database request config ===============================================
 
 ;=== start picture config ==============================================================
-;Global $sDtMenu = "\Match\xp_dental_menu.png"  ;ไม่ใช้
+Global Const $kScreen = 1 ; เครื่องพัฒนา display screen 125% = 1.25 / เครื่องจริง 100% = 1
+
 Global $sFoundVisit = "\Match\xp_hn_found_visit.png"   ;รูปชายหญิง
 Global $aFvFirstPos = [0, 81,75,169] ;start loop position
 Global $aFvPos = [256, 18, 683, 374]  ;end loop position
@@ -153,7 +156,6 @@ Global $sTeleItem40Down =   "\Match\xp_item_found_telemed40down.png"  ;ข้อ
 Global $sTeleItem40Up =   "\Match\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y ทดสอบไม่ใช้  replace with OCR
 Global $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 
-
 Global $sSaveItem =   "\Match\xp_item_save.png"   ;ปุ่มติ๊กถูกในวงกลมสีเขียว สำหรับบันทึกหัตถการ no use
 Global $aSaveItemBtnPos = [1012, 580, 1763, 994]  ; save item btn position
 Global $sTask =   "\Match\xp_task_on_item.png"   ;เมนู Task สีเขียว no use
@@ -172,9 +174,18 @@ Global $aLastOkPos = [728, 341, 1272, 701]
 ;=== end picture config =================================================================
 
 
+
+;=== start OCR text config ==============================================================
+Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
+Global Const $sItemCheckTxt1 = "TELEMED อายุน้อยกว่า 40 ปี"
+Global Const $sItemCheckTxt2 = "TELEMED อายุ 40 ปีขึ้นไป"
+;=== end OCR text config ==============================================================
+
+
+
 ;=== start element class and name config ================================================
-Global $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ;THOSxPDentalOperationEntryForm
-Global $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"
+Global $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
+Global $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
 
 ;=== end element class and name config ================================================
 
@@ -204,6 +215,8 @@ $ArraySitKrg[11] = "44o"  ;อสม นอกเขต  o=op anywhere ต่า
 $ArraySitKrg[12] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
 $ArraySitKrg[13] = "59o"  ;ผู้นำชุมชน นอกเขต  o=op anywhere ต่างจังหวัด
 $ArraySitKrg[14] = "99o"  ;รายได้น้อย นอกเขต  o=op anywhere ต่างจังหวัด
+
+
 
 ;=============================== start utility function ========================================================================
 Func Hkey()
@@ -241,51 +254,33 @@ Func CtrlSendDt($hWnd,$sClass,$iVal)
 EndFunc
 
  Func FindToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- Local $bClick = False
- Local $realX = 0,  $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
-	$bClick = True
-	;Sleep(1000)
- EndIf
- Return $bClick
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
+    Return True
  EndFunc
 
  Func FindToClickRt($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- Local $realX = 0,  $realY = 0
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
 
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick( $MOUSE_CLICK_RIGHT , $realX, $realY, 1, 2)
-	;Sleep(1000)
- EndIf
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_RIGHT, $realX, $realY, 1, 2)
+    Return True
+
 EndFunc
 
 Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
  Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
  ;_ArrayDisplay($Match1)
  If $Match[0] > 0 Then
@@ -1234,7 +1229,7 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 
 	While True
 		Sleep(900)
-		if FindToConOCR("TELEMED อายุน้อยกว่า 40 ปี", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+		if FindToConOCR($sItemCheckTxt1, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
 			ExitLoop
         ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
             _OCRCheckDeadline()
@@ -1258,13 +1253,8 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 	Send("{ENTER}")
 	Sleep(2000)
 	ClickSaveOperation($hWndItem)
-
 	; รอให้โปรแกรมประมวลผลการบันทึก
 	Sleep(500)
-
-	; ปิดฟอร์มเมื่อ ControlClick คืนค่า True เท่านั้น
-	;WinClose($hWndItem, "")
-
 	Return True
 
 EndFunc
@@ -1274,16 +1264,6 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
     _OCRSetRow($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
-;~ 	While 1
-;~ 		Sleep(200)
-;~ 		$hWndItem = WinGetHandle("HOSxPDentalOperationEntryForm")
-;~ 		Sleep(200)
-;~ 		if $hWndItem Then
-;~ 			 Sleep(1700)
-;~ 			ExitLoop
-;~ 		EndIf
-;~ 		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-;~ 	WEnd
 
      ClipPut("telemed2")
 	 Sleep(300)
@@ -1291,7 +1271,7 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 
 	While True
 		Sleep(900)
-		if FindToConOCR("TELEMED อายุ 40 ปีขึ้นไป", $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+		if FindToConOCR($sItemCheckTxt2, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
 			ExitLoop
         ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
             _OCRCheckDeadline()
@@ -1317,7 +1297,6 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 	ClickSaveOperation($hWndItem)
 	Sleep(500)
 	;FindToClick(@ScriptDir&$sSaveItem, $aSaveItemBtnPos[0], $aSaveItemBtnPos[1], $aSaveItemBtnPos[2], $aSaveItemBtnPos[3], 0.75)
-	;WinClose($hWndItem, "")
 	Return True
 EndFunc
 
@@ -1335,8 +1314,6 @@ Func ClickSaveOperation($hWndItem)
 
     Return True
 EndFunc
-
-
 ;===============================  end record Hx function ========================================================================
 
 
@@ -1670,7 +1647,6 @@ Func Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $iRow)
 		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
 		Return False
 	EndIf
-	Local $hStartTime = TimerInit()
 	; Activate once if HOSxP is not already active
 	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
 	While Not WinActive($hWndXp)
@@ -1777,7 +1753,7 @@ Func BotLoop()
 		Local $sSit = ""
     For $i = $iStartRow - 1 To $iEndRow - 1  ;UBound($aResult, 1) - 1
       _OCRSetRow(0, 0, 0)
-	  Sleep(800)
+	  Sleep(500)
 	  Local $hnClass  = "TcxCustomInnerTextEdit2"
 	  Local $iHnVal = $aResult[$i][2]
 	  $sQueue = $aResult[$i][1]
@@ -1808,14 +1784,6 @@ Func BotLoop()
 	  ControlClick($hWndXp, "", $hQCtrl, "left")
 	  Sleep(700)
 	  ControlSend($hWndXp, "", $hQCtrl, "{ENTER}")
-
-;~ 	  ControlClick($hWndXp, "left", $hnClass)
-;~ 	  Sleep(1000)
-;~ 	  ContXp2()
-;~ 	  CtrlSend($hWndXp,$hnClass,$iHnVal)
-;~ 	  Sleep(1000)
-;~ 	  ContXp2()
-;~       Send("{ENTER}")
 
 	  Local $hStartTime = TimerInit() ;เริ่มจับเวลาบันทึกข้อมูล
       _OCRSetRow($hStartTime, $oLogStudent, $i+1)

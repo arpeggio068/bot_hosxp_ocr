@@ -5,77 +5,50 @@
 
 Opt("MouseCoordMode", 1)
 Opt("WinTitleMatchMode", 2)
-Global $sHosXp_Title = "BMS-HOSxP XE 4.0"
+Global Const $sHosXp_Title = "BMS-HOSxP XE 4.0"
+Global Const $kScreen = 1.25 ; เครื่องพัฒนา display screen 125% = 1.25 /  150% = 1.5 /เครื่องจริง 100% = 1
 
 Func TestToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
  Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- $realX = 0
- $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	MouseMove($realX,$realY,10)
-	;MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
- EndIf
+ If Not IsArray($Match) Then Return False
+ If UBound($Match) < 6 Then Return False
+ If $Match[0] <= 0 Then Return False
 
+ Local $realX = Round($Match[4] / $kScreen)
+ Local $realY = Round($Match[5] / $kScreen)
+
+ MouseMove($realX, $realY, 10)
+ Return True
 EndFunc
 
 Func FindToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- $bClick = False
- $realX = 0
- $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
-	$bClick = True
-	;Sleep(1000)
- EndIf
- Return $bClick
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
+    Return True
  EndFunc
 
  Func FindToClickRt($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- $realX = 0
- $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick( $MOUSE_CLICK_RIGHT , $realX, $realY, 1, 2)
-	;Sleep(1000)
- EndIf
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_RIGHT, $realX, $realY, 1, 2)
+    Return True
 
 EndFunc
 
 Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
  Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
  ;_ArrayDisplay($Match1)
  If $Match[0] > 0 Then
@@ -87,6 +60,7 @@ Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, 
  EndIf
 EndFunc
 
+
 Func SetHnBox($hWndXp)
   ; เลือกเฉพาะ TcxGroupBox Instance 1
     Local $hCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxGroupBox; INSTANCE:1]") ;ด้านขวาของ list คนไข้ เส้นแนวตั้งสีฟ้าข้างๆ ไม่ใช่ตาราง grid
@@ -97,6 +71,7 @@ Func SetHnBox($hWndXp)
 		Sleep(1000)
     EndIf
 EndFunc
+
 
 Func ActHosXp()
    Local $hWndXp = WinGetHandle($sHosXp_Title)
@@ -139,12 +114,12 @@ Global $sF4 =   "\Match\xp_f4_click.png"  ;ปุ่มหัตถการ F4 
 Global $aF4Pos = [8, 652,246, 872]
 Global $sAddItem =   "\Match\xp_add_item.png"  ;ปุ่มเครืองหมายบวกเพิ่มหัตถการ ทดสอบไม่ใช้
 Global $aAddItemBtnPos = [177, 190, 629, 489]
-Global $sPratomItem =   "\Match\xp_item_found_pratom.png"  ;ข้อความนักเรียน ประถม
+Global $sPratomItem =   "\Match\xp_item_found_pratom.png"  ;ข้อความ "ตรวจสุขภาพช่องปาก โรงเรียนประถม"
 Global $sElderItem =   "\Match\xp_item_found_elder.png"  ;ข้อความ สูงอายุ นอกหน่วย
-Global $sFluorideItem =   "\Match\xp_item_found_fluoride.png"  ;ข้อความ ฟลูออไรด์วาร์นิช  xp_item_found_tbrush1
+Global $sFluorideItem =   "\Match\xp_item_found_fluoride.png"  ;ข้อความ "เคลือบฟลูออไรด์วานิช (ในเด็ก)"
 Global $sTbrush1_Item =   "\Match\xp_item_found_tbrush1.png"  ;ช้อความ ฝึกแปรงฟันลงมือปฏิบัติ
-Global $sTeleItem40Down =   "\Match\xp_item_found_telemed40down.png"  ;ข้อความ telemed < 40 y
-Global $sTeleItem40Up =   "\Match\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y
+Global $sTeleItem40Down =   "\Match\xp_item_found_telemed40down.png"  ;ข้อความ "TELEMED อายุน้อยกว่า 40 ปี"
+Global $sTeleItem40Up =   "\Match\xp_item_found_telemed40up.png"  ;ข้อความ "TELEMED อายุ 40 ปีขึ้นไป"
 Global $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 Global $sSaveItem =   "\Match\xp_item_save.png"   ;ปุ่มติ๊กถูกในวงกลมสีเขียว สำหรับบันทึกหัตถการ
 Global $aSaveItemBtnPos = [1012, 580, 1763, 994]  ; save item btn position
@@ -163,6 +138,9 @@ Global $sFinalSave2 =   "\Match\xp_final_save2.png"  ;ภาพติ๊กถ�
 Global $aFinalS2Pos = [496, 197, 1081, 534]
 Global $sLastOK =   "\Match\xp_lastOK.png"
 Global $aLastOkPos = [728, 341, 1272, 701]
+Global  $sForTestScreen =   "\Match\fortestscreen.png"
+Global $aForTestScreenPos = [666, 526, 894, 688]
+
 Func SetZeroPrice($hWndXp)
 		if FindToCon(@ScriptDir&$sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
 			FindToClickRt(@ScriptDir&$sOpdPrice1,$aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
@@ -181,6 +159,7 @@ _OpenCV_Startup()
 ;ActHosXp()
 Sleep(1000)
 
+;FindToClick(@ScriptDir&$sForTestScreen, $aForTestScreenPos[0], $aForTestScreenPos[1], $aForTestScreenPos[2], $aForTestScreenPos[3], 0.75)
 ;TestToClick(@ScriptDir&$sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.75)   ;รูปชายหญิงที่ตำแหน่งค่อนมาตรงกลาง
 ;TestToClick(@ScriptDir&$sFoundVisit, $aFvFirstPos[0], $aFvFirstPos[1], $aFvFirstPos[2], $aFvFirstPos[3], 0.8)  ;รูปชายหญิงที่อยู่ตำแหน่งซ้ายสุดของจอ
 ;TestToClick(@ScriptDir&$sFiLock, $aFiLockPos[0], $aFiLockPos[1], $aFiLockPos[2], $aFiLockPos[3], 0.75) ;ภาพกล่องข้อความ finance lock
