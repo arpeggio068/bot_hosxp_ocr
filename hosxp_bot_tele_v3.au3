@@ -112,7 +112,8 @@ Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
 ;=== end telegram  and database request config ===============================================
 
 ;=== start picture config ==============================================================
-;Global $sDtMenu = "\Match\xp_dental_menu.png"  ;ไม่ใช้
+Global Const $kScreen = 1 ; เครื่องพัฒนา display screen 125% = 1.25 / เครื่องจริง 100% = 1
+
 Global $sFoundVisit = "\Match\xp_hn_found_visit.png"   ;รูปชายหญิง
 Global $aFvFirstPos = [0, 81,75,169] ;start loop position
 Global $aFvPos = [256, 18, 683, 374]  ;end loop position
@@ -229,51 +230,33 @@ Func CtrlSendDt($hWnd,$sClass,$iVal)
 EndFunc
 
  Func FindToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- Local $bClick = False
- Local $realX = 0,  $realY = 0
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
-	$bClick = True
-	;Sleep(1000)
- EndIf
- Return $bClick
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
+    Return True
  EndFunc
 
  Func FindToClickRt($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local Const $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
- Local Const $kPosition = 0  ;constant for screen size 125% position. Set $kPosition = 0 if screen size = 100%
- Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
- Local $realX = 0,  $realY = 0
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
 
- If $kPosition > 0 Then
-	$realX = $Match[4] - ($Match[4]/$kPosition)
-    $realY = $Match[5] - ($Match[5]/$kPosition)
- Else
-	$realX = $Match[4]
-    $realY = $Match[5]
- EndIf
- ;_ArrayDisplay($Match1)
- If $Match[0] > 0 Then
-	;MouseMove($realX,$realY,10)
-	MouseClick( $MOUSE_CLICK_RIGHT , $realX, $realY, 1, 2)
-	;Sleep(1000)
- EndIf
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_RIGHT, $realX, $realY, 1, 2)
+    Return True
+
 EndFunc
 
 Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
- Local $kScreen = 1 ;constant for screen size 125% = 1.25  for screen size 100% = 1
  Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
  ;_ArrayDisplay($Match1)
  If $Match[0] > 0 Then
@@ -284,6 +267,7 @@ Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, 
 	 Return False
  EndIf
 EndFunc
+
 
 Func ContXp1()
 	Local $hErrPopUp = WinGetHandle("[CLASS:madExceptWndClass]")  ;madExceptWndClass
@@ -1420,6 +1404,26 @@ Func Click_F4($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	Return True
 EndFunc
 
+Func Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "Ctrl F2 cancelled: the active window changed.")
+		Return False
+	EndIf
+	_Cpp_ctrlF2()
+	Sleep(500)
+	Return True
+EndFunc
 
 
 Func ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $iRow)
@@ -1701,11 +1705,12 @@ Func BotLoop()
 		ContXp2()
 
 		FileWrite($oLogStudentProgress, "Start Click HPI R= "&$i+1&@CRLF)
-		While 1
-			Sleep(500)
-			if FindToClick(@ScriptDir&$sAddHPI, $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 0.80) Then ExitLoop
-			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
-		WEnd
+		Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $i + 1)
+;~ 		While 1
+;~ 			Sleep(500)
+;~ 			if FindToClick(@ScriptDir&$sAddHPI, $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 0.80) Then ExitLoop
+;~ 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
+;~ 		WEnd
 		FileWrite($oLogStudentProgress, "End Click HPI R= "&$i+1&@CRLF)
 
 		FileWrite($oLogStudentProgress, "Start Add HPI Text R= "&$i+1&@CRLF)
