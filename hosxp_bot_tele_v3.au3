@@ -601,6 +601,11 @@ Func ShowSciTE()
 	if $hEcel Then WinSetState($hEcel, "", @SW_SHOW )
 EndFunc
 
+Func HideServerAPI()
+	 Local $hServer = WinWait($sServer_Title, "", 10)
+	if $hServer Then WinSetState($hServer, "", @SW_MINIMIZE)
+EndFunc
+
 
 
 Func SwapXP()
@@ -1492,6 +1497,7 @@ Func BotLoop()
 		Sleep(1200)
 		HideExcel()
 		HideSciTE()
+		HideServerAPI()
 		Sleep(1000)
 		SwapXP()
 		$hWndXp = WinWait($sHosXp_Title, "", 10)
