@@ -919,7 +919,7 @@ Func KillFinance2()
         ; --- 3) ต้องมีปุ่มแรกเป็น "OK" ---
         Local $hOK = ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:1]")
         If $hOK = 0 Then ContinueLoop
-        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "OK" Then ContinueLoop
+        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "ตกลง" Then ContinueLoop
 
         ; --- 4) ต้องมีปุ่มเดียวเท่านั้น (กัน dialog Yes/No, OK/Cancel) ---
         If ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:2]") <> 0 Then ContinueLoop

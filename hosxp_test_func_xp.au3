@@ -180,6 +180,81 @@ Func ClickAddOperation($hWndXp)
 	Return False
 EndFunc
 
+Func KillFinance2()
+    Local $aList = WinList()
+
+    For $i = 1 To $aList[0][0]
+        Local $hWnd = $aList[$i][1]
+        If $hWnd = 0 Then ContinueLoop
+
+        ; --- 1) ต้องเป็น dialog class ---
+        If _WinAPI_GetClassName($hWnd) <> "#32770" Then ContinueLoop
+
+        ; --- 2) ต้อง visible + enabled ---
+        Local $iState = WinGetState($hWnd)
+        If Not BitAND($iState, 2) Then ContinueLoop
+
+        ; --- 3) ต้องมีปุ่มแรกเป็น "OK" ---
+        Local $hOK = ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:1]")
+        If $hOK = 0 Then ContinueLoop
+        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "ตกลง" Then ContinueLoop
+
+        ; --- 4) ต้องมีปุ่มเดียวเท่านั้น (กัน dialog Yes/No, OK/Cancel) ---
+        If ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:2]") <> 0 Then ContinueLoop
+
+        ; --- 5) title ต้องเป็นของ HOSxP ---
+        If Not StringInStr(WinGetTitle($hWnd), "BMS-HOSxP") Then ContinueLoop
+
+        ConsoleWrite("Found popup -> " & $hWnd & @CRLF)
+
+        ; --- 6) ยิงปุ่ม OK แบบไล่ระดับ ---
+        _ClickOK($hWnd, $hOK)
+        Return True
+    Next
+
+    Return False
+EndFunc
+
+Func _ClickOK($hWnd, $hOK)
+    ; วิธี 1: BM_CLICK ตรงเข้า handle ปุ่ม (ทำงานแม้หน้าต่างไม่ active)
+    _SendMessage($hOK, $BM_CLICK, 0, 0)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 2: WM_COMMAND + IDOK ไปที่ dialog
+    _SendMessage($hWnd, $WM_COMMAND, 1, $hOK)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 3: ControlClick แบบปกติ
+    WinActivate($hWnd)
+    WinWaitActive($hWnd, "", 1)
+    ControlClick($hWnd, "", $hOK)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 4: คลิกเมาส์จริงที่พิกัดปุ่ม
+    Local $aPos = ControlGetPos($hWnd, "", $hOK)
+    Local $aWin = WinGetPos($hWnd)
+    If IsArray($aPos) And IsArray($aWin) Then
+        MouseClick("left", $aWin[0] + $aPos[0] + Int($aPos[2] / 2), _
+                           $aWin[1] + $aPos[1] + Int($aPos[3] / 2), 1, 0)
+    EndIf
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 5: Enter / Esc
+    WinActivate($hWnd)
+    Send("{ENTER}")
+    If _WaitClose($hWnd, 800) Then Return
+    Send("{ESC}")
+EndFunc
+
+Func _WaitClose($hWnd, $iMs)
+    Local $t = TimerInit()
+    While TimerDiff($t) < $iMs
+        If Not WinExists($hWnd) Then Return True
+        Sleep(30)
+    WEnd
+    Return False
+EndFunc
+
 
 ;~ Local $hTestWnd = ActHosXp()
 ;~ If $hTestWnd <> 0 Then TestClickF1($hTestWnd)
@@ -193,7 +268,8 @@ EndFunc
 
 
 _CppDllOpen()
-Local $hTestWnd = WinGetHandle($sHosXp_Title)
-Ctrl_F2($hTestWnd)
+;Local $hTestWnd = WinGetHandle($sHosXp_Title)
+;Ctrl_F2($hTestWnd)
+KillFinance2()
 _CppDllClose()
 Exit(0)

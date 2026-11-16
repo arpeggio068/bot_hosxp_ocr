@@ -186,6 +186,7 @@ Global Const $sItemCheckTxt2 = "TELEMED อายุ 40 ปีขึ้นไป
 
 
 ;=== start element class and name config ================================================
+Global $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:34]"    ; ปุ่มเพิ่มหัตถการ
 Global $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
 Global $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
 
@@ -869,35 +870,7 @@ EndFunc
 
 
 ;=============================== start after load exit function =====================================================================
-Func KillFinance1()
-    Local $bFoundFinance = False
-    Local $aList = WinList()
 
-    For $i = 1 To $aList[0][0]
-        Local $hWnd = $aList[$i][1]
-        If $hWnd <> 0 Then
-            Local $sClass = _WinAPI_GetClassName($hWnd)
-            If $sClass = "#32770" And StringInStr($aList[$i][0], $sHosXp_Title) Then
-                ConsoleWrite("found popup: " & $hWnd & " -> WinClose/WinKill" & @CRLF)
-                ; ปิด popup
-                WinClose($hWnd)
-                Sleep(500)
-                If WinExists($hWnd) Then
-                    WinKill($hWnd)
-                    ConsoleWrite("WinKill popup" & @CRLF)
-                EndIf
-                $bFoundFinance = True
-                ExitLoop ; เจอแล้วออก loop ทันที
-            EndIf
-        EndIf
-    Next
-
-    If $bFoundFinance Then
-        Return True
-    Else
-        Return False
-    EndIf
-EndFunc
 
 
 Func KillFinance2()
@@ -917,7 +890,7 @@ Func KillFinance2()
         ; --- 3) ต้องมีปุ่มแรกเป็น "OK" ---
         Local $hOK = ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:1]")
         If $hOK = 0 Then ContinueLoop
-        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "OK" Then ContinueLoop
+        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "ตกลง" Then ContinueLoop
 
         ; --- 4) ต้องมีปุ่มเดียวเท่านั้น (กัน dialog Yes/No, OK/Cancel) ---
         If ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:2]") <> 0 Then ContinueLoop
@@ -1581,7 +1554,7 @@ EndFunc
 
 Func ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $iRow)
     Local $sFormTitle = $sOperationBoxTitle
-    Local $sButton = "[CLASS:TcxButton; INSTANCE:31]"
+    Local $sButton = $sBtnAddOperation
 
     If Not WinExists($hWndXp) Then
         MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")

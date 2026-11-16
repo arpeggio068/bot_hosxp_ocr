@@ -16,6 +16,12 @@ HotKeySet("{F2}", "RunTest")
 HotKeySet("{ESC}", "StopTest")
 ToolTip("OCR Test: F1 = test / ESC = exit", 10, 10)
 
+Global Const $sTxt1 = "ตรวจสุขภาพช่องปากกลุ่มเสี่ยง ผู้สูงอายุ นอกหน่วยบริการ"
+Global Const $sTxt2 = "ฝึกแปรงฟันแบบลงมือปฏิบัติ (ไม่รวม plaque control)"
+Global Const $sTxt3 = "TELEMED อายุน้อยกว่า 40 ปี"
+Global Const $sTxt4 = "TELEMED อายุ 40 ปีขึ้นไป"
+
+
 While True
     Sleep(100)
 WEnd
@@ -25,7 +31,7 @@ Func RunTest()
     $bTesting = True
     ToolTip("")
     ; TestToClickOCR("TELEMED อายุ 40 ปีขึ้นไป",$aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
-	 TestToClickOCR("TELEMED อายุน้อยกว่า 40 ปี",$aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
+	 TestToClickOCR($sTxt2, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
 	; TestToClickOCR("ค่าธรรมเนียมบัตรสุขภาพถ้วนหน้า", $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 60)
 	; TestToClickOCR("Inv Setting", $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 60)
 	; TestToClickOCR("ประวัติ [Ctrl+F2]", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60)
