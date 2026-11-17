@@ -1,0 +1,20 @@
+#ifndef AUTOIT_LIBS_AU3
+#define AUTOIT_LIBS_AU3
+#include <Excel.au3>
+#include <AutoItConstants.au3>
+#include <MsgBoxConstants.au3>
+#Include <WinAPI.au3>
+#include <WinAPISys.au3>
+#Include <SendMessage.au3>
+#include <FileConstants.au3>
+#include <Array.au3>
+#include <StringConstants.au3>
+#include "OpenCV-Match_UDF_Mod.au3"
+#include <ButtonConstants.au3>
+#include <EditConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <StaticConstants.au3>
+#include <WindowsConstants.au3>
+#include <CppKeySend.au3>
+#include <ScreenCapture.au3>
+#endif

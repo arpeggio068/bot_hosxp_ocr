@@ -2,22 +2,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Match\telemed.ico
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#include <Excel.au3>
-#include <AutoItConstants.au3>
-#include <MsgBoxConstants.au3>
-#Include <WinAPI.au3>
-#Include <SendMessage.au3>
-#include <FileConstants.au3>
-#include <Array.au3>
-#include <StringConstants.au3>
-#include "OpenCV-Match_UDF_Mod.au3"
-#include <ButtonConstants.au3>
-#include <EditConstants.au3>
-#include <GUIConstantsEx.au3>
-#include <StaticConstants.au3>
-#include <WindowsConstants.au3>
-#include <Inet.au3>
-#include <CppKeySend.au3>
+
+#include "Lib\utility_global.au3"
+
+
 
 
 Opt("MouseCoordMode", 1)
@@ -84,35 +72,20 @@ Global $iEndRow = $iDefaultValue6
 Global $iSleepAfterLoad = $iDefaultValue7
 ;=============================== end GUI config ========================================================================
 
-Global $iPos1 = -8,  $iPos2 = -8,  $iSize1 = 1552, $iSize2 = 840
-Global $aXpPos = [-8, -8, 1552, 840]
-Global $sHosXp_Title = "BMS-HOSxP XE 4.0"
-Global $sServer_Title = 'AutoIt Server'
+
+;===================== start log path config ==================================================================
 Global $logStudent = @ScriptDir &"\BotLog\log_telemed.txt"
 Global $logStudenProgress = @ScriptDir &"\BotLog\log_telemed_progress.txt"
 Global $logPrice = @ScriptDir &"\BotLog\log_telemed_price.txt"
+;===================== end log path config ==================================================================
 
-Global $hWndXp
-Global $oExcel
-Global $oLogStudent
-Global $oLogStudentProgress
-Global $oLogPrice
-Global $oWorkbook
-Global $iMaxRecTime = 4*60*1000 ; 4 min
 
-;=== start telegram and database request config ===============================================
-Global $gEnvCache = 0       ; เก็บ cache (Dictionary ของ KEY=VALUE)
-Global $gEnvFile = @ScriptDir & "\server\.env"
-Global $gEnvTimestamp = ""  ; เวลาล่าสุดของไฟล์
-Global $gTelegramToken = ""
-Global $gTelegramChatID = ""
-Global $gHTTPTelegram = ObjCreate("WinHttp.WinHttpRequest.5.1")
-Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
-Global $gHTTPError = False
+;=== start nodejs database request config ===============================================
 Global $sReqPath = "query_telemed"
-Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
-
-;=== end telegram  and database request config ===============================================
+;=== end nodejs database request config ===============================================
+ConsoleWrite($gRootDir & @CRLF)
+ConsoleWrite($logStudent & @CRLF)
+ConsoleWrite($gEnvFile & @CRLF)
 
 ;=== start picture config ==============================================================
 Global Const $kScreen = 1 ; เครื่องพัฒนา display screen 125% = 1.25 / เครื่องจริง 100% = 1
@@ -164,14 +137,7 @@ Global $aLastOkPos = [728, 341, 1272, 701]
 ;=== end picture config =================================================================
 
 
-;=== start element class and name config ================================================
-Global Const $sLockPtForm = "[CLASS:THOSxPVisitNumberLockForm]"
-Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:63]"  ; ปุ่มบันทึก CC
-Global Const $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:34]"    ; ปุ่มเพิ่มหัตถการ
-Global Const $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
-Global Const $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
 
-;=== end element class and name config ================================================
 
 
 Global $ArraySit[4]  ;สิทธิที่ต้องแก้ค่าบริการ 30 บาทเป็น 0 บาท ส่งกลับบ้าน 103
@@ -1159,7 +1125,8 @@ EndFunc
 Func Select021($hStartTime, $oLogStudent, $iRow)
 	Local $tt = "OPDSignDoctorEntryForm"
 	Local $hWnd = WinWait($tt, "", 5)
-	WinActivate($hWnd)
+	If Not WinActive($hWnd) Then WinActivate($hWnd)
+	; WinActivate($hWnd)
 	Local $sendCl = "TcxDBLookupComboBox2"
 	ControlClick($hWnd, "left", $sendCl)
 	Sleep(700)
@@ -1562,17 +1529,7 @@ Func BotLoop()
 		    ContinueLoop  ;skip this data when other dentist lock
 	   EndIf
 	   ContXp2()
-	   ;Local $ttest = TimerDiff($hStartTime)
-	   ;MsgBox(0,"time1", $ttest, 2)
 
-		;Send("{F1}") hot key F1 not work in sometimes
-;~ 		FileWrite($oLogStudentProgress, "Start FindToClick F1 Menu R= "&$i+1&@CRLF)
-;~ 		While 1
-;~ 			Sleep(700)
-;~ 			if FindToClick(@ScriptDir&$sF1, $aF1Pos[0], $aF1Pos[1], $aF1Pos[2], $aF1Pos[3], 0.80) Then ExitLoop  ;click F1 menu and go to add CC
-;~ 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
-;~ 		WEnd
-;~         FileWrite($oLogStudentProgress, "End FindToClick F1 Menu R= "&$i+1&@CRLF)
 
         FileWrite($oLogStudentProgress, "Start Send F1 R= " & ($i + 1) & @CRLF)
 		Click_F1($hWndXp, $hStartTime, $oLogStudent, $i + 1)

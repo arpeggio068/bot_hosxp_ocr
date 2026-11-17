@@ -1,0 +1,934 @@
+#ifndef UTILITY_GLOBAL_AU3
+#define UTILITY_GLOBAL_AU3
+
+#include "autoIt_libs.au3"
+
+;=============================== ROOT PATH =================================
+
+Global Const $gRootDir = @ScriptDir
+
+Global Const $gLibDir = $gRootDir & "\Lib"
+Global Const $gLogDir = $gRootDir & "\BotLog"
+Global Const $gServerDir = $gRootDir & "\server"
+Global Const $gMatchPicDir = $gRootDir & "\Match"
+
+;=============================== FILE PATH =================================
+
+
+
+;===================== start log path config ==================================================================
+Global $logStudent =        $gLogDir &"\log_telemed.txt"
+Global $logStudenProgress = $gLogDir &"\log_telemed_progress.txt"
+Global $logPrice =          $gLogDir &"\log_telemed_price.txt"
+;===================== end log path config ==================================================================
+
+
+
+;=============================== start Global 1 ========================================================================
+Global Const $iPos1 = -8,  $iPos2 = -8,  $iSize1 = 1552, $iSize2 = 840
+Global Const $aXpPos = [-8, -8, 1552, 840]
+Global Const $sHosXp_Title = "BMS-HOSxP XE 4.0"
+Global Const $sServer_Title = 'AutoIt Server'
+Global Const $sOCR_Title = 'AutoIt OCR'
+Global $iSleepAfterLoad = 1500
+Global $sSchool = ''
+
+Global $hWndXp
+Global $oExcel
+Global $oLogStudent
+Global $oLogStudentProgress
+Global $oLogPrice
+Global $oWorkbook
+Global $iMaxRecTime = 4*60*1000 ; 4 min
+;=============================== end Global 1 ========================================================================
+
+
+;=== start telegram and database request config ===============================================
+Global $gEnvFile = $gServerDir & "\.env"
+Global $gEnvCache = 0        ; เก็บ cache (Dictionary ของ KEY=VALUE)
+Global $gEnvTimestamp = ""  ; เวลาล่าสุดของไฟล์
+Global $gTelegramToken = ""
+Global $gTelegramChatID = ""
+Global $gHTTPTelegram = ObjCreate("WinHttp.WinHttpRequest.5.1")
+Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
+Global $gHTTPError = False
+Global $sReqPath = "query_telemed"
+Global $oErr = ObjEvent("AutoIt.Error", "_ComErrHandler")
+;=== end telegram  and database request config ===============================================
+
+
+; start OCR v2: confidence 0-100, independent of OpenCV tolerance. ===================================
+Global $gOcrHttpActive = False, $gOcrHttpFailed = False
+Global $gOcrNodePID = 0, $gOcrPythonPID = 0
+Global $gOcrRowTimer = 0, $gOcrRowLog = 0, $gOcrRowNumber = 0
+Global Const $gOcrRequestMs = 60000
+Global Const $gOcrStartupMs = 180000
+Global $gOcrCacheImage = Binary(""), $gOcrCacheKey = "", $gOcrCacheResult = ""
+Global $gOcrLastStatus = ""
+;=== end OCR config ===============================================
+
+
+
+;=== start element class and name config ================================================
+Global Const $sLockPtForm = "[CLASS:THOSxPVisitNumberLockForm]"  ; pop up other user lock
+Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:52]"  ; ปุ่มบันทึก CC
+Global Const $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:31]"    ; ปุ่มเพิ่มหัตถการ
+Global Const $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
+Global Const $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
+
+;=== end element class and name config ================================================
+
+
+
+;=== start picture config ==============================================================
+Global Const $kScreen = 1 ; เครื่องพัฒนา display screen 125% = 1.25 / เครื่องจริง 100% = 1
+
+Global Const $sFoundVisit = $gMatchPicDir & "\xp_hn_found_visit.png"   ;รูปชายหญิง
+Global Const $aFvFirstPos = [0, 81,75,169] ;start loop position
+Global Const $aFvPos = [256, 18, 683, 374]  ;end loop position
+
+Global Const $sLoadPtSuccess2 = $gMatchPicDir & "\xp_load_pt_success2.png" ;รูป icon พยาบาลกากบาทสีน้ำเงิน
+Global Const $aLoadPtPos = [159, 147,1880, 432]
+
+Global Const $sCC =   $gMatchPicDir & "\xp_cc.png"  ;ข้อความ CC
+Global Const $aCcPos = [253, 365, 948, 562]
+
+Global Const $sRec_allergy_iden =  $gMatchPicDir & "\rec_allergy_iden.png"  ;select box การแพ้ยา
+Global Const $aRecAllergyPos = [166, 186, 931, 390]
+
+Global Const $sEditPrice =   $gMatchPicDir & "\xp_edit_price.png"   ; ข้อความ Inv Setting
+Global Const $aEditPricePos = [154, 638, 1515, 941]
+
+
+Global Const $sFinalSave2 =  $gMatchPicDir & "\xp_final_save2.png"  ;ภาพติ๊กถูกในวงกลมสีเขียวตอนบันทึกครั้งสุดท้าย
+Global Const $aFinalS2Pos = [496, 197, 1081, 534]
+Global Const $sLastOK =   $gMatchPicDir & "\xp_lastOK.png"
+Global Const $aLastOkPos = [728, 341, 1272, 701]
+;=== end picture config =================================================================
+
+
+;=============================== start utility function 1 ========================================================================
+Func Hkey()
+	AdlibUnRegister("ContXp1")
+	FileClose($oLogStudent)
+	FileClose($oLogStudentProgress) ;
+	FileClose($oLogPrice)
+	ShowExcel()
+    _Excel_Close($oExcel)
+	ShowSciTE()
+	_OpenCV_Shutdown();Closes DLLs
+	_CppDllClose()
+	 MsgBox(0, "Hkey", "Stop Process")
+	Exit 0
+EndFunc
+
+Func CtrlSend($hWnd,$sClass,$iVal)
+	ControlSend($hWnd, "", $sClass,"{DELETE}")
+	Sleep(200)
+	ControlSend($hWnd, "", $sClass, "{ESC}")
+	Sleep(200)
+	ControlSend($hWnd, "", $sClass, $iVal)
+	Sleep(200)
+EndFunc
+
+Func CtrlSendDt($hWnd,$sClass,$iVal)
+	ControlClick($hWnd, "left", $sClass)
+	Sleep(300)
+	ControlSend($hWnd, "", $sClass,"{DELETE}")
+	Sleep(200)
+	ControlSend($hWnd, "", $sClass, "{ESC}")
+	Sleep(200)
+	ControlSend($hWnd, "", $sClass, $iVal)
+	Sleep(200)
+EndFunc
+
+;=============================== end utility function 1 ========================================================================
+
+
+
+;=============================== start match pic function ==================================================================
+
+ Func FindToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_LEFT, $realX, $realY, 1, 2)
+    Return True
+ EndFunc
+
+ Func FindToClickRt($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
+	Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+	If Not IsArray($Match) Then Return False
+    If UBound($Match) < 6 Then Return False
+    If $Match[0] <= 0 Then Return False
+
+    Local $realX = Round($Match[4] / $kScreen)
+    Local $realY = Round($Match[5] / $kScreen)
+
+    MouseClick($MOUSE_CLICK_RIGHT, $realX, $realY, 1, 2)
+    Return True
+
+EndFunc
+
+Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
+ Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)
+ ;_ArrayDisplay($Match1)
+ If $Match[0] > 0 Then
+	 ;ConsoleWrite("result = match")
+	 Return True
+ Else
+	 ;ConsoleWrite("result = not match")
+	 Return False
+ EndIf
+EndFunc
+;=============================== end match pic function ==================================================================
+
+
+
+;=============================== start utility function 2 ========================================================================
+Func ContXp1()
+	Local $hErrPopUp = WinGetHandle("[CLASS:madExceptWndClass]")  ;madExceptWndClass
+	if $hErrPopUp Then
+		ConsoleWrite("kill error occurred"&@CRLF)
+	    WinKill($hErrPopUp)
+	EndIf
+EndFunc
+
+Func ContXp2()
+	Local $hErrPopUp
+	 While 1
+		    Sleep(100)
+		    $hErrPopUp = WinGetHandle("[CLASS:madExceptWndClass]")
+			Sleep(100)
+			if $hErrPopUp Then
+				ConsoleWrite("kill error occurred"&@CRLF)
+	            WinKill($hErrPopUp)
+			EndIf
+			if Not $hErrPopUp Then ExitLoop
+	  WEnd
+EndFunc
+
+Func ExitMaxTime($hTime, $oFile, $iRow)
+	if TimerDiff($hTime) > $iMaxRecTime Then
+		;SwapFacebook("Error Time Exit R= "&$iRow)
+		FileWrite($oFile, "Error Time Exit R= "&$iRow&", ")
+		SendTeleGram("Error Time Exit R= "&$iRow)
+		Sleep(200)
+		Exit(0)
+	EndIf
+EndFunc
+;=============================== end utility function 2 ========================================================================
+
+
+
+;=============== send request telegram func ==========================================
+Func LoadEnv($sFile = ".env")
+    Local $aLines, $sLine, $aPart
+
+    If Not FileExists($sFile) Then
+        Return SetError(1, 0, 0)
+    EndIf
+
+    $aLines = FileReadToArray($sFile)
+    If @error Then Return SetError(2, 0, 0)
+
+    ; สร้าง Dictionary สำหรับเก็บ key/value
+    Local $oMap = ObjCreate("Scripting.Dictionary")
+
+    For $i = 0 To UBound($aLines) - 1
+        $sLine = StringStripWS($aLines[$i], 3)
+        If $sLine = "" Or StringLeft($sLine, 1) = "#" Then ContinueLoop
+
+        $aPart = StringSplit($sLine, "=", 2)
+        If UBound($aPart) = 2 Then
+            $oMap($aPart[0]) = $aPart[1]
+        EndIf
+    Next
+
+    $gEnvCache = $oMap
+    $gEnvFile = $sFile
+    $gEnvTimestamp = FileGetTime($sFile, 0, 1) ; บันทึก timestamp
+
+    Return $oMap
+EndFunc
+
+Func GetEnv($sKey)
+    ; --- โหลด cache ถ้ายังไม่ถูกสร้าง ---
+    If Not IsObj($gEnvCache) Then
+        $gEnvCache = LoadEnv($gEnvFile)
+    EndIf
+
+    ; --- ตรวจสอบไฟล์ถูกแก้ไขใหม่หรือไม่ ---
+    Local $sCurrentTime = FileGetTime($gEnvFile, 0, 1)
+    If $sCurrentTime <> $gEnvTimestamp Then
+        $gEnvCache = LoadEnv($gEnvFile)
+    EndIf
+
+    ; --- คืนค่า value ---
+    If $gEnvCache.Exists($sKey) Then
+        Return $gEnvCache($sKey)
+    EndIf
+
+    Return ""
+EndFunc
+
+Func SendTeleGram($sMessage)
+    If $gTelegramToken = "" Or $gTelegramChatID = "" Then Return
+
+    Local $sURL = "https://api.telegram.org/bot" & $gTelegramToken & "/sendMessage?chat_id=" & $gTelegramChatID & "&text=" & $sMessage
+
+    $gHTTPTelegram.Open("GET", $sURL, False)
+    $gHTTPTelegram.SetTimeouts(5000, 5000, 5000, 10000) ; timeout: resolve, connect, send, receive
+    $gHTTPTelegram.Send()
+    ;ConsoleWrite("Telegram response: " & $gHTTPTelegram.ResponseText & @CRLF)
+EndFunc
+;=============== send request telegram func ==========================================
+
+
+
+;=============== start send request nodejs localhost func ======================================
+Func QueryPostgres2($sHn)
+    If StringLen($sHn) <> 9 Or Not StringRegExp($sHn, "^[0-9]{9}$") Then
+        Return '{"error":"INVALID_HN"}'
+    EndIf
+
+    Local $sData = '{"hn":"' & $sHn & '"}'
+    Local $sUrl = "http://127.0.0.1:3074/" & $sReqPath
+
+    $gHTTPError = False
+
+    $gHTTPNode.SetTimeouts(5000, 5000, 5000, 10000)
+    If $gHTTPError Then Return '{"error":"API_TIMEOUT_SETUP_FAILED"}'
+
+    $gHTTPNode.Open("POST", $sUrl, False)
+    If $gHTTPError Then Return '{"error":"API_OPEN_FAILED"}'
+
+    $gHTTPNode.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+    If $gHTTPError Then Return '{"error":"API_HEADER_FAILED"}'
+
+    $gHTTPNode.Send($sData)
+    If $gHTTPError Then Return '{"error":"API_SEND_FAILED"}'
+
+    Local $iStatus = $gHTTPNode.Status
+    If $gHTTPError Then Return '{"error":"API_STATUS_FAILED"}'
+
+    Local $sResponse = $gHTTPNode.ResponseText
+    If $gHTTPError Then Return '{"error":"API_RESPONSE_FAILED"}'
+
+    If $iStatus <> 200 Then
+        Return '{"error":"API_HTTP_' & $iStatus & '"}'
+    EndIf
+
+    If $sResponse = "" Then
+        Return '{"error":"API_EMPTY_RESPONSE"}'
+    EndIf
+
+    Return $sResponse
+EndFunc
+
+Func GetSitFromDb2($iHnVal, $oFile, $iRow)
+    ; Never convert HN to a number, pad it, or silently remove invalid characters.
+    Local $sHn = String($iHnVal)
+    If StringLen($sHn) <> 9 Or Not StringRegExp($sHn, "^[0-9]{9}$") Then
+        FileWrite($oFile, "Invalid HN R=" & $iRow & @CRLF)
+        MsgBox(16, "Invalid HN", "HN must contain exactly 9 digits. Excel row: " & $iRow)
+        Exit(1)
+    EndIf
+    Local $result = QueryPostgres2($sHn)
+    If StringInStr($result, '"error"') Then
+        SendTeleGram("Error Server Connect R= " & $iRow)
+        FileWrite($oFile, "Error Server Connect R= " & $iRow & ", ")
+        MsgBox(16, "API Error", "Cannot read data from local API:" & @CRLF & $result)
+        Exit(1)
+    EndIf
+    ; Parse only the fixed three-string array produced by this endpoint.
+    Local $aResult = StringRegExp($result, '^\s*\[\s*"([0-9]+[dno]?)"\s*,\s*"(-?[0-9]+)"\s*,\s*"([0-9]+)"\s*\]\s*$', 1)
+    If @error Then
+        FileWrite($oFile, "Invalid API response R=" & $iRow & @CRLF)
+        MsgBox(16, "API Error", "Invalid API response. Excel row: " & $iRow)
+        Exit(1)
+    EndIf
+    Return $aResult
+EndFunc
+
+
+Func _ComErrHandler($oError)
+    ; เวลามี COM error (เช่น timeout) ให้เก็บ error message ไว้
+    ConsoleWrite("COM Error: " & $oError.description & @CRLF)
+    ; คืนค่าเฉย ๆ เพื่อไม่ให้ AutoIt หยุดทำงาน
+EndFunc
+
+;=============== end send request nodejs localhost func ======================================
+
+
+
+;=============================== start preload function ======================================================================
+Func HideExcel()
+	 Local $hEcel = WinWait("[CLASS:XLMAIN]", "", 10)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_MINIMIZE)
+EndFunc
+
+Func ShowExcel()
+	Local $hEcel = WinWait("[CLASS:XLMAIN]", "", 10)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_SHOW )
+EndFunc
+
+Func HideSciTE()
+	 Local $hEcel = WinWait("[CLASS:SciTEWindow]", "", 2)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_MINIMIZE)
+EndFunc
+
+Func ShowSciTE()
+	Local $hEcel = WinWait("[CLASS:SciTEWindow]", "", 2)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_SHOW )
+EndFunc
+
+Func SwapXP()
+		;_ArrayDisplay($aList)
+	Local $aList = WinList($sHosXp_Title) ;Winlist all hos os
+	Local $aList_Length = $aList[0][0]
+
+	If $aList_Length > 0 Then
+				For $i = 1 To $aList_Length
+					Local $sTitle = $aList[$i][0]
+					Local $hHandle = $aList[$i][1]
+						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
+							;MsgBox($MB_SYSTEMMODAL, "", "Title: " & $aList[$i][0] & @CRLF & "Handle: " & $aList[$i][1])
+							WinActivate($sTitle)
+							Sleep(1000)
+							;WinMove($sTitle, "", $iPos1, $iPos2, $iSize1, $iSize2)
+							ExitLoop
+						EndIf
+				Next
+	Else
+			AdlibUnRegister("ContXp1")
+			FileClose($oLogStudent)
+			FileClose($oLogStudentProgress)
+			FileClose($oLogPrice)
+			ShowExcel()
+			_Excel_Close($oExcel)
+			ShowSciTE()
+			_OpenCV_Shutdown();Closes DLLs
+			_CppDllClose()
+			;SendTeleGram("Not Found Hos XP")
+		    MsgBox($MB_SYSTEMMODAL, "Warning!","ไม่พบโปรแกรม Hos XP",10)
+		    Exit
+    EndIf
+	;ConsoleWrite("SwapHosOS"& @CRLF & "Success")
+EndFunc
+
+Func SetHnBox($hWndXp)
+    ; เลือกเฉพาะ TcxGroupBox Instance 1
+    Local $hCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxGroupBox; INSTANCE:1]") ;ด้านขวาของ list คนไข้ เส้นแนวตั้งสีฟ้าข้างๆ ไม่ใช่ตาราง grid
+    Local $aPos = ControlGetPos($hWndXp, "", $hCtrl)
+    ;MsgBox(0, "HN Box Pos", "x=" & $aPos[0] & ", y=" & $aPos[1] & ", w=" & $aPos[2] & ", h=" & $aPos[3])
+    If $aPos[0] <> 0 Or $aPos[1] <> 125 Or $aPos[2] <> 400 Or $aPos[3] <> 676 Then
+        ControlMove($hWndXp, "", $hCtrl, 0, 125, 400, 676)
+		Sleep(1000)
+    EndIf
+EndFunc
+
+;=============================== end preload function ======================================================================
+
+
+
+;=============================== start after load exit function =====================================================================
+
+Func KillFinance2()
+    Local $aList = WinList()
+
+    For $i = 1 To $aList[0][0]
+        Local $hWnd = $aList[$i][1]
+        If $hWnd = 0 Then ContinueLoop
+
+        ; --- 1) ต้องเป็น dialog class ---
+        If _WinAPI_GetClassName($hWnd) <> "#32770" Then ContinueLoop
+
+        ; --- 2) ต้อง visible + enabled ---
+        Local $iState = WinGetState($hWnd)
+        If Not BitAND($iState, 2) Then ContinueLoop
+
+        ; --- 3) ต้องมีปุ่มแรกเป็น "OK" ---
+        Local $hOK = ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:1]")
+        If $hOK = 0 Then ContinueLoop
+        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "ตกลง" Then ContinueLoop
+
+        ; --- 4) ต้องมีปุ่มเดียวเท่านั้น (กัน dialog Yes/No, OK/Cancel) ---
+        If ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:2]") <> 0 Then ContinueLoop
+
+        ; --- 5) title ต้องเป็นของ HOSxP ---
+        If Not StringInStr(WinGetTitle($hWnd), "BMS-HOSxP") Then ContinueLoop
+
+        ConsoleWrite("Found popup -> " & $hWnd & @CRLF)
+
+        ; --- 6) ยิงปุ่ม OK แบบไล่ระดับ ---
+        _ClickOK($hWnd, $hOK)
+        Return True
+    Next
+
+    Return False
+EndFunc
+
+Func _ClickOK($hWnd, $hOK)
+    ; วิธี 1: BM_CLICK ตรงเข้า handle ปุ่ม (ทำงานแม้หน้าต่างไม่ active)
+    _SendMessage($hOK, $BM_CLICK, 0, 0)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 2: WM_COMMAND + IDOK ไปที่ dialog
+    _SendMessage($hWnd, $WM_COMMAND, 1, $hOK)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 3: ControlClick แบบปกติ
+    WinActivate($hWnd)
+    WinWaitActive($hWnd, "", 1)
+    ControlClick($hWnd, "", $hOK)
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 4: คลิกเมาส์จริงที่พิกัดปุ่ม
+    Local $aPos = ControlGetPos($hWnd, "", $hOK)
+    Local $aWin = WinGetPos($hWnd)
+    If IsArray($aPos) And IsArray($aWin) Then
+        MouseClick("left", $aWin[0] + $aPos[0] + Int($aPos[2] / 2), _
+                           $aWin[1] + $aPos[1] + Int($aPos[3] / 2), 1, 0)
+    EndIf
+    If _WaitClose($hWnd, 800) Then Return
+
+    ; วิธี 5: Enter / Esc
+    WinActivate($hWnd)
+    Send("{ENTER}")
+    If _WaitClose($hWnd, 800) Then Return
+    Send("{ESC}")
+EndFunc
+
+Func _WaitClose($hWnd, $iMs)
+    Local $t = TimerInit()
+    While TimerDiff($t) < $iMs
+        If Not WinExists($hWnd) Then Return True
+        Sleep(30)
+    WEnd
+    Return False
+EndFunc
+
+
+
+Func FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	 Sleep(200)
+	 ;Send("{ENTER}")
+    Local $hPtNote
+	While True
+		Sleep(1000)
+		$hPtNote = WinGetHandle("PatientNoteViewDisplayForm")
+		Sleep(200)
+		if $hPtNote Then WinKill($hPtNote)
+		Sleep(1000)
+		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then ExitLoop ;diagram รูปฟันด้านล่าง
+		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+    Sleep($iSleepAfterLoad)
+	Local $clk
+	While True
+		$clk = ControlClick($hWndXp, "left", "TcxButton8") ;close pt btn
+		Sleep(1000)
+		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+		 If $clk = 1 Then ExitLoop
+	WEnd
+
+	Local $hFeeSch
+	Local $hSpsh
+	 While True
+		Sleep(300)
+		$hFeeSch = WinGetHandle("OvstFeeScheduleEntryForm")
+		Sleep(100)
+	    if $hFeeSch Then WinKill($hFeeSch)
+		Sleep(400)
+
+		$hSpsh = WinGetHandle("HOSxPNHSOConfirmPrivilegeForm")
+		Sleep(100)
+		if $hSpsh Then WinKill($hSpsh)
+		Sleep(400)
+		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.80)   Then ExitLoop   ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
+	 WEnd
+	 Sleep(1000)
+	 Return True
+EndFunc
+
+Func PtExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	Local $hPtNote
+	While True
+		Sleep(1000)
+		$hPtNote = WinGetHandle("PatientNoteViewDisplayForm")
+		Sleep(100)
+		if $hPtNote Then WinKill($hPtNote)
+		Sleep(1000)
+		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80) Then ExitLoop ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
+	WEnd
+    Sleep($iSleepAfterLoad)
+	Local $clk
+	While True
+		$clk = ControlClick($hWndXp, "left", "TcxButton8") ;close pt btn
+		Sleep(1000)
+		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+		 If $clk = 1 Then ExitLoop
+	WEnd
+	;FindToClick(@ScriptDir&$sClosePt,982, 54,1121, 105,  0.75)  ;close pt btn
+	;Sleep(1000)
+	Local $hFeeSch
+	Local $hSpsh
+	While True
+		Sleep(300)
+		$hFeeSch = WinGetHandle("OvstFeeScheduleEntryForm")
+		Sleep(100)
+		 if $hFeeSch Then WinKill($hFeeSch)
+		Sleep(400)
+		$hSpsh = WinGetHandle("HOSxPNHSOConfirmPrivilegeForm")
+		Sleep(100)
+		if $hSpsh Then WinKill($hSpsh)
+		Sleep(400)
+		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.80)  Then ExitLoop  ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
+	 WEnd
+	 Sleep(1000)
+	 Return True
+EndFunc
+;=============================== end after load exit function ======================================================================
+
+
+
+;=============================== start record Hx function ========================================================================
+Func ChiefComp($aDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
+	Local $ccclick =  "TcxCustomInnerTextEdit25"  ;TcxCustomInnerTextEdit25
+	Local $ccadd = $sBtnSaveCC
+	Local $cup = $aDetail[0]
+	Local $date_exam = $aDetail[1]
+	Local $cctextadd = $sSchool
+	Local $cctext = ""
+			;MouseClick("left",417, 426,1,1)
+    ClipPut($cctextadd)
+	Sleep(100)
+	ControlClick($hWndXp, "left", $ccclick)
+	Sleep(500)
+	_Cpp_ctrlV()
+	Sleep(500)
+	$cctext = ControlGetText($hWndXp, "", "TcxDBTextEdit4")
+	Local $a = 1
+	Local $ccstatus = False
+	While $a < 5
+		if StringLen($cctext) > 10 Then
+			$ccstatus = True
+			ExitLoop
+		EndIf
+		Sleep(500)
+	    $a += 1
+	WEnd
+
+    If $ccstatus Then
+		 ControlClick($hWndXp, "left", $ccadd)
+	Else
+		Send("{ENTER}") ;for close not found CC text popup
+		Sleep(700)
+		ControlClick($hWndXp, "left", $ccclick)
+		ClipPut($cctextadd)
+		Sleep(100)
+		_Cpp_ctrlA()
+	    Sleep(700)
+        _Cpp_ctrlV()
+	    Sleep(700)
+		Send("{ENTER}")
+		Sleep(800)
+		ControlClick($hWndXp, "left",  $ccadd)
+	EndIf
+	Sleep(500)
+	ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	Return True
+EndFunc
+
+Func Allergy()
+  Sleep(200)
+  Local $null_allergy = False
+  Local $a = 1
+  While $a < 5
+	 Sleep(50)
+	 if  FindToClick($sRec_allergy_iden, $aRecAllergyPos[0], $aRecAllergyPos[1], $aRecAllergyPos[2], $aRecAllergyPos[3], 0.75) Then
+		  $null_allergy = True
+		  Sleep(200)
+		 ExitLoop
+	 EndIf
+	  $a = $a + 1
+  WEnd
+
+  if $null_allergy Then
+	    Send("{DOWN}")
+		Sleep(300)
+		Send("{DOWN}")
+		Sleep(300)
+		Send("{DOWN}")
+		Sleep(300)
+  EndIf
+
+EndFunc
+
+Func ClickSaveOperation($hWndItem)
+    If Not WinExists($hWndItem) Then
+        ConsoleWrite("ERROR: ไม่พบฟอร์มบันทึกหัตถการ" & @CRLF)
+        Return False
+    EndIf
+
+    If Not ControlClick($hWndItem, "", $sBtnSaveOperation) Then
+        ConsoleWrite("ERROR: ControlClick ปุ่มบันทึกไม่สำเร็จ" & @CRLF)
+        Return False
+    EndIf
+
+    Return True
+EndFunc
+;===============================  end record Hx function ========================================================================
+
+
+
+;=============================== start save function ============================================================================
+Func FinalSave1($hStartTime, $oLogStudent, $hWndXp, $iRow)
+    Local $clk
+	Local $hControl
+	Sleep(500)
+	While 1
+		Sleep(300)
+		$hControl = ControlGetHandle($hWndXp, "", "TcxButton7")
+		If $hControl Then ExitLoop
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+    WEnd
+	While True
+		Sleep(300)
+		 $clk = ControlClick($hWndXp, "left",$hControl)
+		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+		 If $clk = 1 Then ExitLoop
+	WEnd
+	Return True
+EndFunc
+
+Func Select021($hStartTime, $oLogStudent, $iRow)
+	Local $tt = "OPDSignDoctorEntryForm"
+	Local $hWnd = WinWait($tt, "", 5)
+	If Not WinActive($hWnd) Then WinActivate($hWnd)
+	; WinActivate($hWnd)
+	Local $sendCl = "TcxDBLookupComboBox2"
+	ControlClick($hWnd, "left", $sendCl)
+	Sleep(700)
+	ControlSend($hWnd, "", $sendCl,"{DELETE}")
+	Sleep(200)
+	ControlSend($hWnd, "", $sendCl, "{ESC}")
+	Sleep(200)
+	ControlSend($hWnd,  "", $sendCl, "021")
+	Sleep(300)
+	Send("{ENTER}")
+	Local $sSend = ""
+	   Do
+	      $sSend = ControlGetText($hWnd, "", $sendCl)
+		  Sleep(200)
+		  ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+	   Until  $sSend = "021 ห้องการเงิน"
+	  ;MsgBox(0, "สิทธิ", $sSend,1)
+EndFunc
+
+Func FinalSave2($hStartTime, $oLogStudent, $iRow)
+	 Local $hFeeSch
+	 Local $hSpsh
+	 Local $hNoAuthen
+	While True
+		Sleep(1000)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+		if FindToClick($sFinalSave2, $aFinalS2Pos[0], $aFinalS2Pos[1], $aFinalS2Pos[2], $aFinalS2Pos[3], 0.75)  Then  ExitLoop
+	WEnd
+
+	While True
+		Sleep(100)
+		$hSpsh = WinGetHandle("HOSxPNHSOConfirmPrivilegeForm")
+		Sleep(100)
+		if $hSpsh Then WinKill($hSpsh)
+		Sleep(300)
+
+		$hNoAuthen = WinGetHandle("BMSTextMessageDialogForm")
+		Sleep(100)
+		if $hNoAuthen Then WinKill($hNoAuthen)
+		Sleep(300)
+
+		$hFeeSch = WinGetHandle("OvstFeeScheduleEntryForm")  ;appear first but delay more than  200 ms
+		Sleep(100)
+		if $hFeeSch Then WinKill($hFeeSch)
+		Sleep(300)
+
+        FindToClick($sLastOK, $aLastOkPos[0], $aLastOkPos[1], $aLastOkPos[2], $aLastOkPos[3], 0.75)
+		Sleep(200)
+		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.75)  Then ExitLoop  ;รูปคนที่ตำแหน่งค่อนมาตรงกลาง
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Return True
+EndFunc
+
+Func FinalSave2Krg($hStartTime,$oLogStudent,$iRow)
+	 Local $hFeeSch
+	 Local $hSpsh
+	 Local $hNoAuthen
+
+	While True
+		Sleep(300)
+		if Findtocon($sFinalSave2, $aFinalS2Pos[0], $aFinalS2Pos[1], $aFinalS2Pos[2], $aFinalS2Pos[3], 0.75)  Then ExitLoop
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+
+    Sleep(300)
+    Select021($hStartTime, $oLogStudent, $iRow)
+	;ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+	FindToClick($sFinalSave2, $aFinalS2Pos[0], $aFinalS2Pos[1], $aFinalS2Pos[2], $aFinalS2Pos[3], 0.75)
+	While True
+		Sleep(100)
+		$hSpsh = WinGetHandle("HOSxPNHSOConfirmPrivilegeForm")
+		Sleep(100)
+		if $hSpsh Then WinKill($hSpsh)
+		Sleep(300)
+
+		$hNoAuthen = WinGetHandle("BMSTextMessageDialogForm")
+		Sleep(100)
+		if $hNoAuthen Then WinKill($hNoAuthen)
+		Sleep(300)
+
+		$hFeeSch = WinGetHandle("OvstFeeScheduleEntryForm") ;appear first but delay more than  200 ms
+		Sleep(100)
+		if $hFeeSch Then WinKill($hFeeSch)
+		Sleep(300)
+
+        FindToClick($sLastOK, $aLastOkPos[0], $aLastOkPos[1], $aLastOkPos[2], $aLastOkPos[3], 0.75)
+		Sleep(200)
+		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.75)  Then ExitLoop  ;รูปคนที่ตำแหน่งค่อนมาตรงกลาง
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Return True
+EndFunc
+;===============================  end save function ============================================================================
+
+
+
+;=============================== short cut F1 F4 function ========================================================================
+Func Click_F1($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	;Local $hStartTime = TimerInit()
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "F1 cancelled: the active window changed.")
+		Return False
+	EndIf
+	Send("{F1}")
+	Sleep(200)
+	Return True
+EndFunc
+
+Func Click_F4($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	;Local $hStartTime = TimerInit()
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "F1 cancelled: the active window changed.")
+		Return False
+	EndIf
+	Send("{F4}")
+	Sleep(1000)
+	Return True
+EndFunc
+
+Func Ctrl_F2($hWndXp, $hStartTime, $oLogStudent, $iRow)
+	If Not WinExists($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+		Return False
+	EndIf
+	; Activate once if HOSxP is not already active
+	If Not WinActive($hWndXp) Then WinActivate($hWndXp)
+	While Not WinActive($hWndXp)
+		Sleep(200)
+		ExitMaxTime($hStartTime,$oLogStudent,$iRow)
+	WEnd
+	Sleep(300)
+	If Not WinActive($hWndXp) Then
+		MsgBox($MB_ICONERROR, "Error", "Ctrl F2 cancelled: the active window changed.")
+		Return False
+	EndIf
+	_Cpp_ctrlF2()
+	Sleep(500)
+	Return True
+EndFunc
+
+
+Func ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $iRow)
+    Local $sFormTitle = $sOperationBoxTitle
+    Local $sButton = $sBtnAddOperation
+
+    If Not WinExists($hWndXp) Then
+        MsgBox($MB_ICONERROR, "Error", "HOSxP window was not found.")
+        Return False
+    EndIf
+
+    ; ป้องกันฟอร์มเดิมค้างอยู่
+    If WinExists($sFormTitle) Then
+        MsgBox($MB_ICONWARNING, "Test", "Close the operation entry form before testing.")
+        Return False
+    EndIf
+
+    Local $hButton = ControlGetHandle($hWndXp, "", $sButton)
+
+    If @error Or $hButton = 0 Then
+        MsgBox($MB_ICONERROR, "Error", "The Add Operation button was not found.")
+        Return False
+    EndIf
+
+    If ControlGetText($hWndXp, "", $hButton) <> "เพิ่มหัตถการ" Then
+        MsgBox($MB_ICONERROR, "Error", "The button text does not match.")
+        Return False
+    EndIf
+
+    If ControlClick($hWndXp, "", $hButton, "left", 1) <> 1 Then
+        MsgBox($MB_ICONERROR, "Error", "ControlClick failed.")
+        Return False
+    EndIf
+
+    ; รอจนกว่าจะพบฟอร์ม หรือ ExitMaxTime สั่งปิดสคริปต์
+    While True
+        Sleep(500)
+
+        Local $hForm = WinGetHandle($sFormTitle)
+
+        If $hForm <> 0 Then
+            If _WinAPI_IsWindowVisible($hForm) Then
+                Return True
+            EndIf
+        EndIf
+
+        ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+    WEnd
+
+EndFunc
+;=============================== end short cut F1 F4 function ========================================================================
+
+#endif
