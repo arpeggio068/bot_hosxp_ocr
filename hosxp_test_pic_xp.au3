@@ -6,7 +6,7 @@
 Opt("MouseCoordMode", 1)
 Opt("WinTitleMatchMode", 2)
 Global Const $sHosXp_Title = "BMS-HOSxP XE 4.0"
-Global Const $kScreen = 1.25 ; เครื่องพัฒนา display screen 125% = 1.25 /  150% = 1.5 /เครื่องจริง 100% = 1
+Global Const $kScreen = 1.0 ; เครื่องพัฒนา display screen 125% = 1.25 /  150% = 1.5 /เครื่องจริง 100% = 1
 
 Func TestToClick($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, $x2 = 51, $y2 = 400, $tol = 0.75)
  Local $Match = _MatchPicture("", $picPath, $x1*$kScreen, $y1*$kScreen, $x2*$kScreen, $y2*$kScreen, $tol)

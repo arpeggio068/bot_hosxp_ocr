@@ -165,9 +165,11 @@ Global $aLastOkPos = [728, 341, 1272, 701]
 
 
 ;=== start element class and name config ================================================
-Global $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:34]"    ; ปุ่มเพิ่มหัตถการ
-Global $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
-Global $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
+Global Const $sLockPtForm = "[CLASS:THOSxPVisitNumberLockForm]"
+Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:63]"  ; ปุ่มบันทึก CC
+Global Const $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:34]"    ; ปุ่มเพิ่มหัตถการ
+Global Const $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
+Global Const $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
 
 ;=== end element class and name config ================================================
 
@@ -863,7 +865,7 @@ EndFunc
 ;=============================== start record Hx function ========================================================================
 Func ChiefComp($aDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 	Local $ccclick =  "TcxCustomInnerTextEdit25"  ;TcxCustomInnerTextEdit25
-	Local $ccadd = "TcxButton52"  ; TcxButton52
+	Local $ccadd = $sBtnSaveCC
 	Local $cup = $aDetail[0]
 	Local $date_exam = $aDetail[1]
 	Local $cctextadd = $sSchool
@@ -1475,7 +1477,7 @@ Func BotLoop()
 		  EndIf
 		  Sleep(300)
 
-		  $hDentistLock = WinGetHandle("Visit Number Locked")
+		  $hDentistLock = WinGetHandle($sLockPtForm)
 		  Sleep(100)
 		  If $hDentistLock Then
 			  $bDentistLock = True
