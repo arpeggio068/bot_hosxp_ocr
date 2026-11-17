@@ -75,9 +75,9 @@ $iSleepAfterLoad = $iDefaultValue7
 
 
 ;===================== start log path config ==================================================================
-$logStudent =        $gLogDir &"\log_telemed.txt"
-$logStudenProgress = $gLogDir &"\log_telemed_progress.txt"
-$logPrice =          $gLogDir &"\log_telemed_price.txt"
+$logStudent =        $gLogDir & "\log_telemed.txt"
+$logStudenProgress = $gLogDir & "\log_telemed_progress.txt"
+$logPrice =          $gLogDir & "\log_telemed_price.txt"
 ;===================== end log path config ==================================================================
 
 
@@ -86,8 +86,7 @@ $sReqPath = "query_telemed"
 ;=== end nodejs database request config ===============================================
 
 
-;=== start picture config ==============================================================
-
+;=== start local picture config ==============================================================
 Global Const $sTeleItem40Down = $gMatchPicDir &  "\xp_item_found_telemed40down.png"  ;ข้อความ telemed < 40 y
 Global Const $sTeleItem40Up =   $gMatchPicDir & "\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y
 Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
@@ -96,8 +95,7 @@ Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
 Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
 Global Const $aOpdPricePos = [159, 713, 1083, 988]
-
-;=== end picture config =================================================================
+;=== end local picture config =================================================================
 
 
 
@@ -420,8 +418,11 @@ Func BotLoop()
 		Local $iCnt = 0
 		Local $sSit = ""
     For $i = $iStartRow - 1 To $iEndRow - 1  ;UBound($aResult, 1) - 1
-	  Sleep(800)
-	  Local $hnClass  = "TcxCustomInnerTextEdit2"
+		$bTodayAppoint = False
+		$bDentistLock = False
+		$bFinanceLock = False
+	  Sleep(500)
+	  ; Local $hnClass  = "TcxCustomInnerTextEdit2"
 	  Local $iHnVal = $aResult[$i][2]
 	  $sQueue = $aResult[$i][1]
 	  Local $iAgeVal = Number($aResult[$i][3])
@@ -483,6 +484,8 @@ Func BotLoop()
 		  If $hDentistLock Then
 			  $bDentistLock = True
 		      WinKill($hDentistLock)
+			  Sleep(300)
+			  ExitLoop
 		  EndIf
 		  Sleep(300)
 
@@ -492,6 +495,14 @@ Func BotLoop()
 		 EndIf
 		  $a = $a+1
 	  WEnd
+
+	    If  $bDentistLock Then
+            Sleep(100)
+			FileWrite($oLogStudent, "Error Locked R= "&$i+1&", ")
+			SendTeleGram("Error Locked R= "&$i+1)
+		    Sleep(300)
+		    ContinueLoop  ;skip this data when other dentist lock
+		EndIf
 
 	   If $a = 10 Then
 		    FileWrite($oLogStudent, "Error Visit2 R= "&$i+1&", ")
@@ -513,57 +524,34 @@ Func BotLoop()
 			Sleep(100)
 
 			if KillFinance2() Then
-				$bFinanceLock = True
-                FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
-				FileWrite($oLogStudent, "Error Finance R= "&$i+1&", ")
-			    SendTeleGram("Error Finance R= "&$i+1)
-				Sleep(200)
-				ExitLoop
+					$bFinanceLock = True
+					PtExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
+					FileWrite($oLogStudent, "Error Finance R= "&$i+1&", ")
+					SendTeleGram("Error Finance R= "&$i+1)
+					Sleep(200)
+					ExitLoop
 			ElseIf $bTodayAppoint Then
-					if $bFinanceLock Then
-						FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
-						FileWrite($oLogStudent, "Error Finance Today R= "&$i+1&", ")
-						SendTeleGram("Error Finance Today R= "&$i+1)
-						Sleep(200)
-						ExitLoop
-					Else
-						PtExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
-						FileWrite($oLogStudent, "Error Today Appoint R= "&$i+1&", ")
-						SendTeleGram("Error Today Appoint R= "&$i+1)
-						Sleep(200)
-						ExitLoop
-					EndIf
-			ElseIf Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then ;refresh blue pic
-				Sleep($iSleepAfterLoad)
-				ExitLoop
+					PtExit($hWndXp, $hStartTime, $oLogStudent, $i+1)
+					FileWrite($oLogStudent, "Warning Today Appoint R= "&$i+1&", ")
+					SendTeleGram("Warning Today Appoint R= "&$i+1)
+					Sleep(200)
+					ExitLoop
+			ElseIf Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then   ;refresh blue pic
+					Sleep($iSleepAfterLoad)
+					ExitLoop
 			Else
 				Sleep(200)
 			EndIf
+
 			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
 	   WEnd
 	;== end hos xp loading loop ===================================
 	   FileWrite($oLogStudentProgress, "End Init Loading Loop R= "&$i+1&@CRLF)
 
-	  If  $bTodayAppoint Then
-		   $bTodayAppoint = False
-		   ContinueLoop
-	   EndIf
+	   If  $bFinanceLock Then  ContinueLoop
+	   If  $bTodayAppoint Then  ContinueLoop
 
-	  If  $bFinanceLock Then
-		   $bFinanceLock = False
-		   ContinueLoop
-       EndIf
-
-	    If  $bDentistLock Then
-            Sleep(100)
-			FileWrite($oLogStudent, "Error Locked R= "&$i+1&", ")
-			SendTeleGram("Error Locked R= "&$i+1)
-		    Sleep(300)
-			$bDentistLock = False
-		    ContinueLoop  ;skip this data when other dentist lock
-	   EndIf
 	   ContXp2()
-
 
         FileWrite($oLogStudentProgress, "Start Send F1 R= " & ($i + 1) & @CRLF)
 		Click_F1($hWndXp, $hStartTime, $oLogStudent, $i + 1)
@@ -580,10 +568,10 @@ Func BotLoop()
 		Sleep(750)
 		ContXp2()
 		FileWrite($oLogStudentProgress, "Start Record CC And Allergy R= "&$i+1&@CRLF)
-		Local $aDetail[2]
-		$aDetail[0] = $sSchool ; cup
-		$aDetail[1] = $sSchool ; date exam
-		ChiefComp($aDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
+		Local $vDetail = ""    ;$aDetail[2]
+		;$aDetail[0] = $sSchool ; cup
+		;$aDetail[1] = $sSchool ; date exam
+		ChiefComp($vDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
 			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:18]")  ;TcxDBTextEdit18
@@ -696,9 +684,6 @@ Func BotLoop()
 		$sSit = ""
 		$sBw = "0"
 		$sQueue = "0"
-		$bTodayAppoint = False
-		$bFinanceLock = False
-		$bDentistLock = False
 		$bSitKrg = False
 		$iCnt += 1
 		If ($iCnt = 5) Then

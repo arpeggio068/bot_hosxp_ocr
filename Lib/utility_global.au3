@@ -65,6 +65,7 @@ Global Const $gOcrRequestMs = 60000
 Global Const $gOcrStartupMs = 180000
 Global $gOcrCacheImage = Binary(""), $gOcrCacheKey = "", $gOcrCacheResult = ""
 Global $gOcrLastStatus = ""
+Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
 ;=== end OCR config ===============================================
 
 
@@ -187,6 +188,217 @@ Func FindToCon($picPath = @ScriptDir&"\Match\dad_name.png", $x1 = 0, $y1 = 370, 
  EndIf
 EndFunc
 ;=============================== end match pic function ==================================================================
+
+
+
+; ==================== start OCR functions share the original template's DPI conversion. ==================================================
+; Always capture current pixels; reuse OCR only when PNG bytes AND query match.
+; No Found popup/tooltip. @error: 1 input, 2 capture, 3 HTTP, 4 protocol, 5 timeout.
+Func FindToClickOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence = 60)
+    Local $aHit = _FindOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence)
+    Local $iError = @error
+    If Not IsArray($aHit) Then Return SetError($iError, 0, False)
+    _OCRCheckDeadline()
+    MouseClick($MOUSE_CLICK_LEFT, $aHit[0], $aHit[1], 1, 2)
+    Return True
+EndFunc
+
+Func FindToClickRtOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence = 60)
+    Local $aHit = _FindOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence)
+    Local $iError = @error
+    If Not IsArray($aHit) Then Return SetError($iError, 0, False)
+    _OCRCheckDeadline()
+    MouseClick($MOUSE_CLICK_RIGHT, $aHit[0], $aHit[1], 1, 2)
+    Return True
+EndFunc
+
+Func FindToConOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence = 60)
+    Local $aHit = _FindOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence)
+    Local $iError = @error
+    Return SetError($iError, 0, IsArray($aHit))
+EndFunc
+
+Func _OCRSetRow($hStartTime, $oLog, $iRow)
+    $gOcrRowTimer = $hStartTime
+    $gOcrRowLog = $oLog
+    $gOcrRowNumber = $iRow
+EndFunc
+
+Func _OCRCheckDeadline()
+    If $gOcrRowTimer <> 0 Then ExitMaxTime($gOcrRowTimer, $gOcrRowLog, $gOcrRowNumber)
+EndFunc
+
+Func _OCRHttp($sMethod, $sUrl, $bBody, $iTimeoutMs, ByRef $iStatus)
+    $iStatus = 0
+    $gOcrHttpFailed = False
+    $gOcrHttpActive = True
+    Local $oHttp = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    If Not IsObj($oHttp) Then
+        $gOcrHttpActive = False
+        Return SetError(3, 0, "")
+    EndIf
+    $oHttp.SetProxy(1)
+    $oHttp.SetTimeouts(2000, 2000, 5000, $iTimeoutMs)
+    $oHttp.Open($sMethod, $sUrl, True)
+    If $sMethod = "POST" Then
+        $oHttp.SetRequestHeader("Content-Type", "image/png")
+        $oHttp.Send($bBody)
+    Else
+        $oHttp.Send()
+    EndIf
+    Local $hWait = TimerInit(), $iFailure = 0
+    While Not $gOcrHttpFailed
+        If $oHttp.WaitForResponse(0) Then ExitLoop
+        _OCRCheckDeadline()
+        If TimerDiff($hWait) >= $iTimeoutMs Then
+            $iFailure = 5
+            ExitLoop
+        EndIf
+        Sleep(50)
+    WEnd
+    If $gOcrHttpFailed Then $iFailure = 3
+    If $iFailure Then
+        $oHttp.Abort()
+        $gOcrHttpActive = False
+        Return SetError($iFailure, 0, "")
+    EndIf
+    $iStatus = $oHttp.Status
+    Local $sText = $oHttp.ResponseText
+    Local $bFailed = $gOcrHttpFailed
+    $gOcrHttpActive = False
+    _OCRCheckDeadline()
+    If $bFailed Then Return SetError(3, 0, "")
+    Return $sText
+EndFunc
+
+Func _FindOCR($sTarget, $x1, $y1, $x2, $y2, $minConfidence)
+    _OCRCheckDeadline()
+    $gOcrLastStatus = "ERROR"
+
+    If $sTarget = "" Or $x2 <= $x1 Or $y2 <= $y1 Or _
+            $minConfidence < 0 Or $minConfidence > 100 Then
+        Return SetError(1, 0, False)
+    EndIf
+
+    Local $iLeft = Round($x1 * $kScreen)
+    Local $iTop = Round($y1 * $kScreen)
+    Local $iRight = Round($x2 * $kScreen)
+    Local $iBottom = Round($y2 * $kScreen)
+
+    Local $sOcrDir = @ScriptDir & "\TempOCR"
+
+	If Not FileExists($sOcrDir) Then
+		If Not DirCreate($sOcrDir) Then
+			ConsoleWrite("OCR: สร้างโฟลเดอร์ไม่สำเร็จ: " & $sOcrDir & @CRLF)
+			Return SetError(2, 0, False)
+		EndIf
+	EndIf
+
+    Local $sImage = $sOcrDir & "\hosxp_ocr_" & @AutoItPID & ".png"
+
+    ; จับภาพปัจจุบันก่อนตรวจ cache
+    FileDelete($sImage)
+    _ScreenCapture_Capture($sImage, $iLeft, $iTop, $iRight, $iBottom, False)
+
+    If Not FileExists($sImage) Then Return SetError(2, 0, False)
+
+    Local $hFile = FileOpen($sImage, 16)
+    If $hFile = -1 Then Return SetError(2, 0, False)
+
+    Local $bImage = FileRead($hFile)
+    FileClose($hFile)
+
+    If BinaryLen($bImage) = 0 Then Return SetError(2, 0, False)
+
+    Local $sKey = $sTarget & "|" & $minConfidence & "|" & _
+            $iLeft & "|" & $iTop & "|" & $iRight & "|" & $iBottom
+
+    Local $sResponse = "", $iStatus = 0
+
+    If $sKey == $gOcrCacheKey And $bImage = $gOcrCacheImage Then
+        ; ภาพ คำค้น confidence และ area เหมือนเดิม ใช้ผลสำเร็จที่จำไว้
+        $sResponse = $gOcrCacheResult
+    Else
+        _OCRCheckDeadline()
+
+        ; ส่งคำค้นจริงครั้งเดียว Python จะตรวจ exact ก่อน fuzzy
+        Local $sHex = StringTrimLeft(String(StringToBinary($sTarget, 4)), 2)
+
+        $sResponse = _OCRHttp("POST", _
+                $sOcrUrl & "/ocr?target=" & $sHex & _
+                "&confidence=" & $minConfidence, _
+                $bImage, $gOcrRequestMs, $iStatus)
+
+        Local $iError = @error
+
+        ; ล้าง cache เดิมเมื่อมีการค้นหาใหม่
+        $gOcrCacheKey = ""
+
+        If $iError Then Return SetError($iError, 0, False)
+
+        If $iStatus <> 200 Then
+            ConsoleWrite("OCR HTTP=" & $iStatus & @CRLF)
+            Return SetError(3, $iStatus, False)
+        EndIf
+    EndIf
+
+    ; Python: status, x, y, confidence, text, similarity, match_method
+    Local $aResult = StringSplit(StringStripWS($sResponse, 2), @TAB, 2)
+    If UBound($aResult) < 7 Then Return SetError(4, 0, False)
+
+    $gOcrLastStatus = $aResult[0]
+
+    ; ทั้ง NO_MATCH และ AMBIGUOUS จะไม่คืนพิกัดสำหรับคลิก
+    If $aResult[0] <> "MATCH" Then Return False
+
+    If Not StringRegExp($aResult[1], "^\d+(?:\.\d+)?$") Or _
+            Not StringRegExp($aResult[2], "^\d+(?:\.\d+)?$") Or _
+            Not StringRegExp($aResult[3], "^\d+(?:\.\d+)?$") Or _
+            Not StringRegExp($aResult[5], "^\d+(?:\.\d+)?$") Then
+        $gOcrLastStatus = "ERROR"
+        Return SetError(4, 0, False)
+    EndIf
+
+    Local $fX = Number($aResult[1])
+    Local $fY = Number($aResult[2])
+    Local $fConfidence = Number($aResult[3])
+    Local $fSimilarity = Number($aResult[5])
+    Local $sMethod = $aResult[6]
+
+    If $fX < 0 Or $fX > $iRight - $iLeft Or _
+            $fY < 0 Or $fY > $iBottom - $iTop Or _
+            $fConfidence > 100 Or $fSimilarity > 100 Then
+        $gOcrLastStatus = "ERROR"
+        Return SetError(4, 0, False)
+    EndIf
+
+    If $sMethod <> "exact" And $sMethod <> "fuzzy" Then
+        $gOcrLastStatus = "ERROR"
+        Return SetError(4, 0, False)
+    EndIf
+
+    If $fConfidence < $minConfidence Then Return False
+
+    ; เกณฑ์ similarity ตรวจโดย Python ตาม FUZZY_MINIMUM
+    _OCRCheckDeadline()
+
+    ; เก็บ cache หลังตรวจสอบ response สำเร็จแล้วเท่านั้น
+    $gOcrCacheKey = $sKey
+    $gOcrCacheImage = $bImage
+    $gOcrCacheResult = $sResponse
+
+    ConsoleWrite("OCR MATCH | method=" & $sMethod & _
+            " | confidence=" & $fConfidence & _
+            " | similarity=" & $fSimilarity & @CRLF)
+
+    ; พิกัดภายในภาพ → พิกัดหน้าจอ ตาม scaling เดิม
+    Local $aHit[2] = [ _
+            Round(($iLeft + $fX) / $kScreen), _
+            Round(($iTop + $fY) / $kScreen)]
+
+    Return $aHit
+EndFunc
+; ==================== end OCR functions share the original template's DPI conversion. ==================================================
 
 
 
@@ -460,7 +672,7 @@ Func KillFinance2()
         ; --- 3) ต้องมีปุ่มแรกเป็น "OK" ---
         Local $hOK = ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:1]")
         If $hOK = 0 Then ContinueLoop
-        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "ตกลง" Then ContinueLoop
+        If StringStripWS(ControlGetText($hWnd, "", $hOK), 8) <> "OK" Then ContinueLoop
 
         ; --- 4) ต้องมีปุ่มเดียวเท่านั้น (กัน dialog Yes/No, OK/Cancel) ---
         If ControlGetHandle($hWnd, "", "[CLASS:Button; INSTANCE:2]") <> 0 Then ContinueLoop
@@ -530,7 +742,7 @@ Func FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
 		Sleep(200)
 		if $hPtNote Then WinKill($hPtNote)
 		Sleep(1000)
-		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then ExitLoop ;diagram รูปฟันด้านล่าง
+		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then ExitLoop   ;refresh blue pic
 		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
 	WEnd
     Sleep($iSleepAfterLoad)
@@ -561,73 +773,100 @@ Func FinanceLockExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
 	 Return True
 EndFunc
 
-Func PtExit($hWndXp, $hStartTime, $oLogStudent, $iRow)
+Func PtExit($hWndXp, $hStartTime, $oLogStudent, $iRow)  ; code same as FinanceLockExit
+	Sleep(200)
+
 	Local $hPtNote
-	While True
-		Sleep(1000)
-		$hPtNote = WinGetHandle("PatientNoteViewDisplayForm")
-		Sleep(100)
-		if $hPtNote Then WinKill($hPtNote)
-		Sleep(1000)
-		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80) Then ExitLoop ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
-	WEnd
-    Sleep($iSleepAfterLoad)
 	Local $clk
-	While True
-		$clk = ControlClick($hWndXp, "left", "TcxButton8") ;close pt btn
-		Sleep(1000)
-		 ExitMaxTime($hStartTime,$oLogStudent,$iRow)
-		 If $clk = 1 Then ExitLoop
-	WEnd
-	;FindToClick(@ScriptDir&$sClosePt,982, 54,1121, 105,  0.75)  ;close pt btn
-	;Sleep(1000)
 	Local $hFeeSch
 	Local $hSpsh
+
+	; 1. รอให้ฟอร์มผู้ป่วยโหลดเสร็จ
 	While True
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+
+		Sleep(1000)
+		$hPtNote = WinGetHandle("PatientNoteViewDisplayForm")
+		Sleep(200)
+		If $hPtNote Then WinKill($hPtNote)
+		Sleep(500)
+
+		If Findtocon($sLoadPtSuccess2, $aLoadPtPos[0], $aLoadPtPos[1], $aLoadPtPos[2], $aLoadPtPos[3], 0.80)  Then ExitLoop   ;refresh blue pic
+	WEnd
+
+	Sleep($iSleepAfterLoad)
+
+	; 2. กดปิดหน้าผู้ป่วย
+	While True
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+
+		$clk = ControlClick($hWndXp, "", "TcxButton8", "left")
+		Sleep(1000)
+
+		If $clk = 1 Then ExitLoop
+	WEnd
+
+	; 3. ปิด popup หลังออก และรอกลับหน้ารายการ
+	While True
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+
 		Sleep(300)
 		$hFeeSch = WinGetHandle("OvstFeeScheduleEntryForm")
 		Sleep(100)
-		 if $hFeeSch Then WinKill($hFeeSch)
+		If $hFeeSch Then WinKill($hFeeSch)
 		Sleep(400)
+
 		$hSpsh = WinGetHandle("HOSxPNHSOConfirmPrivilegeForm")
 		Sleep(100)
-		if $hSpsh Then WinKill($hSpsh)
+		If $hSpsh Then WinKill($hSpsh)
 		Sleep(400)
-		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.80)  Then ExitLoop  ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
-	 WEnd
-	 Sleep(1000)
-	 Return True
+
+		if Findtocon($sFoundVisit, $aFvPos[0], $aFvPos[1], $aFvPos[2], $aFvPos[3], 0.80)   Then ExitLoop   ;รูปคนตำแหน่งกลางค่อนมาทางซ้าย
+	WEnd
+
+	Sleep(1000)
+	Return True
 EndFunc
 ;=============================== end after load exit function ======================================================================
 
 
 
 ;=============================== start record Hx function ========================================================================
-Func ChiefComp($aDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
+Func ChiefComp($vDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 	Local $ccclick =  "TcxCustomInnerTextEdit25"  ;TcxCustomInnerTextEdit25
 	Local $ccadd = $sBtnSaveCC
-	Local $cup = $aDetail[0]
-	Local $date_exam = $aDetail[1]
-	Local $cctextadd = $sSchool
-	Local $cctext = ""
-			;MouseClick("left",417, 426,1,1)
+
+	Local $cctextadd =  ""  ; $sSchool
+	Local $cup =  ""   ;$aDetail[0]
+	Local $date_exam = ""  ;$aDetail[1]
+
+    ;MouseClick("left",417, 426,1,1)
+	If IsArray($vDetail) Then
+		$cctextadd = $vDetail[13] & " " & $sSchool   ;CC for student is class and school
+	Else
+		$cctextadd = $sSchool  ;CC for telemed is school only
+	EndIf
+
     ClipPut($cctextadd)
 	Sleep(100)
 	ControlClick($hWndXp, "left", $ccclick)
 	Sleep(500)
 	_Cpp_ctrlV()
 	Sleep(500)
-	$cctext = ControlGetText($hWndXp, "", "TcxDBTextEdit4")
-	Local $a = 1
+
+	Local $cctext = ""
 	Local $ccstatus = False
-	While $a < 5
-		if StringLen($cctext) > 10 Then
+
+	For $a = 1 To 4
+		; อ่านค่าใหม่ทุกรอบ เพื่อรอให้ข้อความแสดงผล
+		$cctext = ControlGetText($hWndXp, "", "TcxDBTextEdit4")
+
+		If StringLen($cctext) > 10 Then
 			$ccstatus = True
 			ExitLoop
 		EndIf
 		Sleep(500)
-	    $a += 1
-	WEnd
+	Next
 
     If $ccstatus Then
 		 ControlClick($hWndXp, "left", $ccadd)

@@ -1238,7 +1238,7 @@ EndFunc
 ;=============================== start record Hx function ========================================================================
 Func ChiefComp($schclass, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 	Local $ccclick =  "TcxCustomInnerTextEdit25"
-	Local $ccadd = "TcxButton52"  ;TcxButton50
+	Local $ccadd = "TcxButton52"  ;  Local $ccadd = $sBtnSaveCC
 	Local $cctextadd = $schclass&" "&$sSchool
 	Local $cctext = ""
 			;MouseClick("left",417, 426,1,1)
