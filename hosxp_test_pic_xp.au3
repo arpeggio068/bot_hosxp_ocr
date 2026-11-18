@@ -80,17 +80,8 @@ Func ActHosXp()
    Local $hWndXp = WinGetHandle($sHosXp_Title)
    Sleep(100)
    WinSetState($hWndXp, "", @SW_RESTORE)
-   Sleep(200)
-   ;WinSetState($hWndXp, "", @SW_MAXIMIZE)
-   Sleep(200)
-   ;DllCall("user32.dll", "int", "SetForegroundWindow", "hwnd", $hWndXp)
    Sleep(500)
-   ;Sleep(1000)
-   ;WinActivate($hWndXp)
-   ;Sleep(1000)
-   ;SetHnBox($hWndXp)
-   ;Sleep(1000)
-   ;SetZeroPrice($hWndXp)
+
 EndFunc
 
 ;=============== global pic ======================================================================

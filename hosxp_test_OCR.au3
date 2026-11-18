@@ -14,7 +14,7 @@ Global $aAddHPIPos = [92, 101, 420, 249]
 
 HotKeySet("{F2}", "RunTest")
 HotKeySet("{ESC}", "StopTest")
-ToolTip("OCR Test: F1 = test / ESC = exit", 10, 10)
+ToolTip("OCR Test: F2 = test / ESC = exit", 10, 10)
 
 Global Const $sTxt1 = "ตรวจสุขภาพช่องปากกลุ่มเสี่ยง ผู้สูงอายุ นอกหน่วยบริการ"
 Global Const $sTxt2 = "ฝึกแปรงฟันแบบลงมือปฏิบัติ (ไม่รวม plaque control)"
@@ -30,11 +30,9 @@ Func RunTest()
     If $bTesting Then Return
     $bTesting = True
     ToolTip("")
-    ; TestToClickOCR("TELEMED อายุ 40 ปีขึ้นไป",$aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
-	 TestToClickOCR($sTxt2, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
-	; TestToClickOCR("ค่าธรรมเนียมบัตรสุขภาพถ้วนหน้า", $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 60)
-	; TestToClickOCR("Inv Setting", $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 60)
-	; TestToClickOCR("ประวัติ [Ctrl+F2]", $aAddHPIPos[0], $aAddHPIPos[1], $aAddHPIPos[2], $aAddHPIPos[3], 60)
+
+	TestToClickOCR($sTxt2, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 60)
+
     $bTesting = False
 EndFunc
 ; $minConfidence เป็นค่า OCR 0-100 ไม่ใช่ค่า tolerance ของ OpenCV
