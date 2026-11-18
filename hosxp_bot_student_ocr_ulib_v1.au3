@@ -121,140 +121,24 @@ $ArraySitKrg[4] = "25o"  ;นักเรียน นอกเขต  o=op anyw
 $ArraySitKrg[5] = "47o"  ;เด็ก 0-12 ปี นอกเขต  o=op anywhere ต่างจังหวัด
 
 
-
-;=============================== start utility function ==============================================================================================
-
 ;=============== send request telegram func ==========================================
 ;=============== send request telegram func ==========================================
 
-;=============== start send request nodejs ocr localhost func ======================================
-Func StartServer()
-    ;_ArrayDisplay($aList)
-    ;_ArrayDisplay($aList)
-    Local $sNodeDir = @ScriptDir & "\server"
-    Local $sPythonDir = @ScriptDir & "\OCR"
-    If Not FileExists($sNodeDir & "\package.json") Or Not FileExists($sPythonDir & "\.venv\Scripts\python.exe") Or Not FileExists($sPythonDir & "\server.py") Then
-        MsgBox($MB_ICONERROR, "Start server", "Missing server/package.json or OCR/.venv/Scripts/python.exe or OCR/server.py. Run install.bat first.")
-        Return False
-    EndIf
-    Local $hNode = WinGetHandle($sServer_Title)
-    If $hNode Then
-        $gOcrNodePID = WinGetProcess($hNode)
-    Else
-        ; Working directory passed to Run handles spaces and drive changes.
-        $gOcrNodePID = Run('"' & @ComSpec & '" /d /c "title ' & $sServer_Title & ' & npm start"', $sNodeDir, @SW_MINIMIZE)
-        If @error Or $gOcrNodePID = 0 Then Return False
-    EndIf
-    Local $iStatus = 0
-    Local $sHealth = _OCRHttp("GET", $sOcrUrl & "/health", Binary(""), 2000, $iStatus)
-    If $iStatus = 200 And StringInStr($sHealth, "READY") Then
-        $gOcrPythonPID = _OCRFindPythonPID()
-        Return True
-    EndIf
-    $gOcrPythonPID = _OCRFindPythonPID()
-    If $gOcrPythonPID = 0 Then
-        EnvSet("PYTHONUTF8", "1")
-        $gOcrPythonPID = Run('"' & $sPythonDir & '\.venv\Scripts\python.exe" "' & $sPythonDir & '\server.py"', $sPythonDir, @SW_MINIMIZE)
-        If @error Or $gOcrPythonPID = 0 Then Return False
-    EndIf
-    Local $hStartup = TimerInit()
-    While TimerDiff($hStartup) < $gOcrStartupMs
-        If Not ProcessExists($gOcrPythonPID) Then ExitLoop
-        $sHealth = _OCRHttp("GET", $sOcrUrl & "/health", Binary(""), 2000, $iStatus)
-        If $iStatus = 200 And StringInStr($sHealth, "READY") Then Return True
-        Sleep(500)
-    WEnd
-    MsgBox($MB_ICONERROR, "OCR", "OCR is not READY on port 3078. Check the Python terminal. First model download may take longer than 180 seconds.")
-    Return False
-EndFunc
 
-Func _OCRFindPythonPID()
-    Local $oWmi = ObjGet("winmgmts:\\.\root\cimv2")
-    If Not IsObj($oWmi) Then Return 0
-    Local $oProcesses = $oWmi.ExecQuery("SELECT ProcessId, ExecutablePath, CommandLine FROM Win32_Process WHERE Name='python.exe'")
-    If Not IsObj($oProcesses) Then Return 0
-    For $oProc In $oProcesses
-        If StringLower($oProc.ExecutablePath) = StringLower(@ScriptDir & "\OCR\.venv\Scripts\python.exe") And StringInStr($oProc.CommandLine, "server.py") Then Return Number($oProc.ProcessId)
-    Next
-    Return 0
-EndFunc
-
-
-Func StopServer()
-    ; ปิดหน้าต่าง Node.js server ตาม title เดิม
-    Local $aList = WinList($sServer_Title) ;Winlist all hos os
-    ;_ArrayDisplay($aList)
-    Local $aList_Length = $aList[0][0]
-
-    For $i = 1 To $aList_Length
-        Local $sTitle = $aList[$i][0]
-        Local $hHandle = $aList[$i][1]
-
-        If $sTitle <> "" Then
-            WinKill($hHandle)
-            Sleep(300)
-        EndIf
-    Next
-
-    ; ปิด Node.js และรอให้คำสั่งทำงานเสร็จ
-    Local $iNodeExit = RunWait( _
-            '"' & @SystemDir & '\taskkill.exe" /IM node.exe /T /F', _
-            "", @SW_HIDE)
-
-    ConsoleWrite("Node.js taskkill exit code=" & $iNodeExit & @CRLF)
-
-    ; ปิด OCR server ตาม PID
-    If $gOcrPythonPID = 0 Or Not ProcessExists($gOcrPythonPID) Then
-        $gOcrPythonPID = _OCRFindPythonPID()
-    EndIf
-
-    If $gOcrPythonPID > 0 Then
-        Local $iOcrExit = RunWait( _
-                '"' & @SystemDir & '\taskkill.exe" /PID ' & _
-                Int($gOcrPythonPID) & ' /T /F', _
-                "", @SW_HIDE)
-
-        ConsoleWrite("OCR taskkill exit code=" & $iOcrExit & @CRLF)
-
-        If Not ProcessExists($gOcrPythonPID) Then
-            $gOcrPythonPID = 0
-        EndIf
-    Else
-        ConsoleWrite("OCR server ไม่ได้ทำงาน" & @CRLF)
-    EndIf
-
-    $gOcrNodePID = 0
-    $gOcrCacheKey = ""
-    FileDelete(@ScriptDir & "\TempOCR\hosxp_ocr_" & @AutoItPID & ".png")
-EndFunc
-
-Func MsgStopServer()
-	Local $iAnswer = MsgBox($MB_OKCANCEL + $MB_ICONQUESTION, _
-    "ยืนยัน", "คุณต้องการปิด server หรือไม่?")
-	If $iAnswer = $IDOK Then
-		StopServer()
-	Else
-		MsgBox($MB_ICONWARNING, "ยกเลิก", "กรุณาปิด server ด้วยตนเอง")
-	EndIf
-EndFunc
-;=============== end send request nodejs ocr localhost func ======================================
-
+;=============== send request nodejs ocr localhost func ======================================
+;StartServer2 StopServer2 MsgStopServer2
+;=============== end request nodejsocr localhost func ======================================
 
 
 ;=============================== start preload function ======================================================================
-Func HideServerAPI()
-	 Local $hServer = WinWait($sServer_Title, "", 10)
-	 Local $hPyOCR = WinWait($sOCR_Title, "", 10)
-	if $hServer Then WinSetState($hServer, "", @SW_MINIMIZE)
-	if $hPyOCR Then WinSetState($hPyOCR, "", @SW_MINIMIZE)
-EndFunc
+; HideExcel ShowExcel HideSciTE ShowSciTE SwapXP SetHnBox HideServerAPI2
 ;=============================== end preload function ======================================================================
-
 
 
 ;=============================== start after load exit function =====================================================================
 ; reuse 100% with utility_global.au   KillFinance2 FinanceLockExit PtExit
 ;=============================== end after load exit function ======================================================================
+
 
 
 ;=============================== start record dental function ======================================================================
@@ -562,9 +446,9 @@ Func BotLoop()
 		$oLogStudentProgress = FileOpen($logStudenProgress, $FO_APPEND)
 		$oLogPrice =  FileOpen($logPrice, $FO_APPEND) ;
 		Sleep(1200)
-		HideServerAPI()
 		HideExcel()
 		HideSciTE()
+		HideServerAPI2()
 		Sleep(1000)
 		SwapXP()
 		$hWndXp = WinWait($sHosXp_Title, "", 10)
@@ -974,10 +858,10 @@ _OpenCV_Startup()  ;
 _CppDllOpen()
 $gTelegramToken = GetEnv("TELEGRAM_TOKEN")
 $gTelegramChatID = GetEnv("TELEGRAM_CHAT")
-If Not StartServer() Then Exit(1)
+If Not StartServer2() Then Exit(1)
 Sleep(1000)
 BotLoop()
 _OpenCV_Shutdown()
 _CppDllClose()
-MsgStopServer()
+MsgStopServer2()
 Exit(0)

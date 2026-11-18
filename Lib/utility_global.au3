@@ -587,7 +587,186 @@ EndFunc
 
 
 
+;=============== send request nodejs localhost func ======================================
+Func StartServer1()
+	Local $aList = WinList($sServer_Title)
+	;_ArrayDisplay($aList)
+	Local $aList_Length = $aList[0][0]
+	If $aList_Length > 0 Then
+				For $i = 1 To $aList_Length
+					$sTitle = $aList[$i][0]
+					$hHandle = $aList[$i][1]
+						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
+							Sleep(300)
+							ExitLoop
+						EndIf
+				Next
+	Else
+	   Local $CMD2 =  'cd '&@ScriptDir&'\server\ && ' & _
+        'npm start'
+	   Run('"' & @ComSpec & '" /k ' & $CMD2)
+	EndIf
+EndFunc
+
+Func StopServer1()
+	Local $aList = WinList($sServer_Title) ;Winlist all hos os
+	;_ArrayDisplay($aList)
+	Local $aList_Length = $aList[0][0]
+	 If $aList_Length > 0 Then
+				For $i = 1 To $aList_Length
+					$sTitle = $aList[$i][0]
+					$hHandle = $aList[$i][1]
+						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
+							WinKill($sTitle)
+							Sleep(300)
+							ExitLoop
+						EndIf
+				Next
+	EndIf
+    Run(@ComSpec & ' /c taskkill /IM node.exe /F', "", @SW_HIDE)
+    ConsoleWrite("Node.js server stopped by taskkill" & @CRLF)
+EndFunc
+
+Func MsgStopServer1()
+	Local $iAnswer = MsgBox($MB_OKCANCEL + $MB_ICONQUESTION, _
+    "ยืนยัน", "คุณต้องการปิด server หรือไม่?")
+	If $iAnswer = $IDOK Then
+		StopServer1()
+	Else
+		MsgBox($MB_ICONWARNING, "ยกเลิก", "กรุณาปิด server ด้วยตนเอง")
+	EndIf
+EndFunc
+;=============== end request nodejs localhost func ======================================
+
+
+
+;=============== start send request nodejs ocr localhost func ======================================
+Func StartServer2()
+    ;_ArrayDisplay($aList)
+    ;_ArrayDisplay($aList)
+    Local $sNodeDir = @ScriptDir & "\server"
+    Local $sPythonDir = @ScriptDir & "\OCR"
+    If Not FileExists($sNodeDir & "\package.json") Or Not FileExists($sPythonDir & "\.venv\Scripts\python.exe") Or Not FileExists($sPythonDir & "\server.py") Then
+        MsgBox($MB_ICONERROR, "Start server", "Missing server/package.json or OCR/.venv/Scripts/python.exe or OCR/server.py. Run install.bat first.")
+        Return False
+    EndIf
+    Local $hNode = WinGetHandle($sServer_Title)
+    If $hNode Then
+        $gOcrNodePID = WinGetProcess($hNode)
+    Else
+        ; Working directory passed to Run handles spaces and drive changes.
+        $gOcrNodePID = Run('"' & @ComSpec & '" /d /c "title ' & $sServer_Title & ' & npm start"', $sNodeDir, @SW_MINIMIZE)
+        If @error Or $gOcrNodePID = 0 Then Return False
+    EndIf
+    Local $iStatus = 0
+    Local $sHealth = _OCRHttp("GET", $sOcrUrl & "/health", Binary(""), 2000, $iStatus)
+    If $iStatus = 200 And StringInStr($sHealth, "READY") Then
+        $gOcrPythonPID = _OCRFindPythonPID()
+        Return True
+    EndIf
+    $gOcrPythonPID = _OCRFindPythonPID()
+    If $gOcrPythonPID = 0 Then
+        EnvSet("PYTHONUTF8", "1")
+        $gOcrPythonPID = Run('"' & $sPythonDir & '\.venv\Scripts\python.exe" "' & $sPythonDir & '\server.py"', $sPythonDir, @SW_MINIMIZE)
+        If @error Or $gOcrPythonPID = 0 Then Return False
+    EndIf
+    Local $hStartup = TimerInit()
+    While TimerDiff($hStartup) < $gOcrStartupMs
+        If Not ProcessExists($gOcrPythonPID) Then ExitLoop
+        $sHealth = _OCRHttp("GET", $sOcrUrl & "/health", Binary(""), 2000, $iStatus)
+        If $iStatus = 200 And StringInStr($sHealth, "READY") Then Return True
+        Sleep(500)
+    WEnd
+    MsgBox($MB_ICONERROR, "OCR", "OCR is not READY on port 3078. Check the Python terminal. First model download may take longer than 180 seconds.")
+    Return False
+EndFunc
+
+Func _OCRFindPythonPID()
+    Local $oWmi = ObjGet("winmgmts:\\.\root\cimv2")
+    If Not IsObj($oWmi) Then Return 0
+    Local $oProcesses = $oWmi.ExecQuery("SELECT ProcessId, ExecutablePath, CommandLine FROM Win32_Process WHERE Name='python.exe'")
+    If Not IsObj($oProcesses) Then Return 0
+    For $oProc In $oProcesses
+        If StringLower($oProc.ExecutablePath) = StringLower(@ScriptDir & "\OCR\.venv\Scripts\python.exe") And StringInStr($oProc.CommandLine, "server.py") Then Return Number($oProc.ProcessId)
+    Next
+    Return 0
+EndFunc
+
+
+Func StopServer2()
+    ; ปิดหน้าต่าง Node.js server ตาม title เดิม
+    Local $aList = WinList($sServer_Title) ;Winlist all hos os
+    ;_ArrayDisplay($aList)
+    Local $aList_Length = $aList[0][0]
+
+    For $i = 1 To $aList_Length
+        Local $sTitle = $aList[$i][0]
+        Local $hHandle = $aList[$i][1]
+
+        If $sTitle <> "" Then
+            WinKill($hHandle)
+            Sleep(300)
+        EndIf
+    Next
+
+    ; ปิด Node.js และรอให้คำสั่งทำงานเสร็จ
+    Local $iNodeExit = RunWait( _
+            '"' & @SystemDir & '\taskkill.exe" /IM node.exe /T /F', _
+            "", @SW_HIDE)
+
+    ConsoleWrite("Node.js taskkill exit code=" & $iNodeExit & @CRLF)
+
+    ; ปิด OCR server ตาม PID
+    If $gOcrPythonPID = 0 Or Not ProcessExists($gOcrPythonPID) Then
+        $gOcrPythonPID = _OCRFindPythonPID()
+    EndIf
+
+    If $gOcrPythonPID > 0 Then
+        Local $iOcrExit = RunWait( _
+                '"' & @SystemDir & '\taskkill.exe" /PID ' & _
+                Int($gOcrPythonPID) & ' /T /F', _
+                "", @SW_HIDE)
+
+        ConsoleWrite("OCR taskkill exit code=" & $iOcrExit & @CRLF)
+
+        If Not ProcessExists($gOcrPythonPID) Then
+            $gOcrPythonPID = 0
+        EndIf
+    Else
+        ConsoleWrite("OCR server ไม่ได้ทำงาน" & @CRLF)
+    EndIf
+
+    $gOcrNodePID = 0
+    $gOcrCacheKey = ""
+    FileDelete(@ScriptDir & "\TempOCR\hosxp_ocr_" & @AutoItPID & ".png")
+EndFunc
+
+Func MsgStopServer2()
+	Local $iAnswer = MsgBox($MB_OKCANCEL + $MB_ICONQUESTION, _
+    "ยืนยัน", "คุณต้องการปิด server หรือไม่?")
+	If $iAnswer = $IDOK Then
+		StopServer2()
+	Else
+		MsgBox($MB_ICONWARNING, "ยกเลิก", "กรุณาปิด server ด้วยตนเอง")
+	EndIf
+EndFunc
+;=============== end send request nodejs ocr localhost func ======================================
+
+
+
 ;=============================== start preload function ======================================================================
+Func HideServerAPI1()
+	 Local $hServer = WinWait($sServer_Title, "", 10)
+	if $hServer Then WinSetState($hServer, "", @SW_MINIMIZE)
+EndFunc
+
+Func HideServerAPI2()
+	 Local $hServer = WinWait($sServer_Title, "", 10)
+	 Local $hPyOCR = WinWait($sOCR_Title, "", 10)
+	if $hServer Then WinSetState($hServer, "", @SW_MINIMIZE)
+	if $hPyOCR Then WinSetState($hPyOCR, "", @SW_MINIMIZE)
+EndFunc
+
 Func HideExcel()
 	 Local $hEcel = WinWait("[CLASS:XLMAIN]", "", 10)
 	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
@@ -854,8 +1033,8 @@ Func ChiefComp($vDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 			$cctextadd = $vDetail[13] & " " & $sSchool   ;CC for student is class and school
 		Else
 			; elder $vDetail length = 2
-			Local $cup = $vDetail[0]
-			Local $date_exam = $vDetail[1]
+			$cup = $vDetail[0]
+			$date_exam = $vDetail[1]
 			$cctextadd = $sSchool &" "& $cup &" "& $date_exam
 		EndIf
 	Else

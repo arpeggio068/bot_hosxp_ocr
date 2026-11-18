@@ -103,7 +103,7 @@ $ArraySit30B[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจั�
 $ArraySit30B[2] = "56"  ;12-59 ในเขต
 $ArraySit30B[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
 
-Global $aCheckPttype[11] = ["17", "19", "21", "28", "30", "32", "37", "44", "50", "59", "99"]
+; Global $aCheckPttype[11] = ["17", "19", "21", "28", "30", "32", "37", "44", "50", "59", "99"]
 
 Global $ArraySitKrg[15]  ;สิทธิที่ต้องส่งต่อห้องการเงิน 021
 $ArraySitKrg[0] = "01"  ; ขรก. (องค์กรปกครองส่วนท้องถิ่น)
@@ -123,66 +123,16 @@ $ArraySitKrg[13] = "59o"  ;ผู้นำชุมชน นอกเขต  o=
 $ArraySitKrg[14] = "99o"  ;รายได้น้อย นอกเขต  o=op anywhere ต่างจังหวัด
 
 
+;=============== send request telegram func ==========================================
+;=============== send request telegram func ==========================================
 
 ;=============== send request nodejs localhost func ======================================
-Func StartServer()
-	Local $aList = WinList($sServer_Title)
-	;_ArrayDisplay($aList)
-	Local $aList_Length = $aList[0][0]
-	If $aList_Length > 0 Then
-				For $i = 1 To $aList_Length
-					$sTitle = $aList[$i][0]
-					$hHandle = $aList[$i][1]
-						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
-							Sleep(300)
-							ExitLoop
-						EndIf
-				Next
-	Else
-	   Local $CMD2 =  'cd '&@ScriptDir&'\server\ && ' & _
-        'npm start'
-	   Run('"' & @ComSpec & '" /k ' & $CMD2)
-	EndIf
-EndFunc
-
-Func StopServer()
-	Local $aList = WinList($sServer_Title) ;Winlist all hos os
-	;_ArrayDisplay($aList)
-	Local $aList_Length = $aList[0][0]
-	 If $aList_Length > 0 Then
-				For $i = 1 To $aList_Length
-					$sTitle = $aList[$i][0]
-					$hHandle = $aList[$i][1]
-						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
-							WinKill($sTitle)
-							Sleep(300)
-							ExitLoop
-						EndIf
-				Next
-	EndIf
-    Run(@ComSpec & ' /c taskkill /IM node.exe /F', "", @SW_HIDE)
-    ConsoleWrite("Node.js server stopped by taskkill" & @CRLF)
-EndFunc
-
-Func MsgStopServer()
-	Local $iAnswer = MsgBox($MB_OKCANCEL + $MB_ICONQUESTION, _
-    "ยืนยัน", "คุณต้องการปิด server หรือไม่?")
-	If $iAnswer = $IDOK Then
-		StopServer()
-	Else
-		MsgBox($MB_ICONWARNING, "ยกเลิก", "กรุณาปิด server ด้วยตนเอง")
-	EndIf
-EndFunc
+; StartServer1 StopServer1 MsgStopServer1
 ;=============== end request nodejs localhost func ======================================
 
 
-
 ;=============================== start preload function ======================================================================
-; HideExcel ShowExcel HideSciTE ShowSciTE SwapXP SetHnBox
-Func HideServerAPI()
-	 Local $hServer = WinWait($sServer_Title, "", 10)
-	if $hServer Then WinSetState($hServer, "", @SW_MINIMIZE)
-EndFunc
+; HideExcel ShowExcel HideSciTE ShowSciTE SwapXP SetHnBox HideServerAPI1
 ;=============================== end preload function ======================================================================
 
 
@@ -319,7 +269,7 @@ Func BotLoop()
 		Sleep(1200)
 		HideExcel()
 		HideSciTE()
-		HideServerAPI()
+		HideServerAPI1()
 		Sleep(1000)
 		SwapXP()
 		$hWndXp = WinWait($sHosXp_Title, "", 10)
@@ -685,12 +635,12 @@ _OpenCV_Startup()  ;
 _CppDllOpen()
 $gTelegramToken = GetEnv("TELEGRAM_TOKEN")
 $gTelegramChatID = GetEnv("TELEGRAM_CHAT")
-StartServer()
+StartServer1()
 Sleep(1000)
 BotLoop()
 _OpenCV_Shutdown()
 _CppDllClose()
-MsgStopServer()
+MsgStopServer1()
 Exit(0)
 
 
