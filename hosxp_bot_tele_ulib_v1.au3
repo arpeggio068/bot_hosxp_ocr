@@ -201,7 +201,8 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-     ClipPut("telemed1")
+	Local Const $sKeySearch = "telemed1"
+     ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()
 
@@ -210,14 +211,11 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 		if Findtocon($sTeleItem40Down, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 0.75)  Then
 			ExitLoop
 		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
 			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			Sleep(400)
-			ClipPut("telemed1")
-            Sleep(700)
-		    _Cpp_ctrlA()
-			Sleep(400)
-			Send("{DELETE}")
-	        Sleep(700)
+			ClipPut($sKeySearch)
+            Sleep(500)
             _Cpp_ctrlV()
 			Sleep(1000)
 		EndIf
@@ -225,17 +223,11 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 	WEnd
 	;ControlSend($hWndItem, "","" , "{ENTER}")
 	Send("{ENTER}")
-	Sleep(2000)
+	Sleep(1700)
 	ClickSaveOperation($hWndItem)
-
 	; รอให้โปรแกรมประมวลผลการบันทึก
 	Sleep(500)
-
-	; ปิดฟอร์มเมื่อ ControlClick คืนค่า True เท่านั้น
-	;WinClose($hWndItem, "")
-
 	Return True
-
 EndFunc
 
 
@@ -243,7 +235,8 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-     ClipPut("telemed2")
+	Local Const $sKeySearch = "telemed2"
+     ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()
 
@@ -252,14 +245,11 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 		if Findtocon($sTeleItem40Up, $aItemTxtPos[0],  $aItemTxtPos[1],  $aItemTxtPos[2],  $aItemTxtPos[3], 0.75)  Then
 			ExitLoop
 		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
 			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			Sleep(400)
-			ClipPut("telemed2")
-            Sleep(700)
-		    _Cpp_ctrlA()
-			Sleep(400)
-			Send("{DELETE}")
-	        Sleep(700)
+			ClipPut($sKeySearch)
+            Sleep(500)
             _Cpp_ctrlV()
 			Sleep(1000)
 		EndIf
@@ -267,11 +257,9 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 	WEnd
 	;ControlSend($hWndItem, "","" , "{ENTER}")
 	Send("{ENTER}")
-	Sleep(2000)
+	Sleep(1700)
 	ClickSaveOperation($hWndItem)
 	Sleep(500)
-	;FindToClick(@ScriptDir&$sSaveItem, $aSaveItemBtnPos[0], $aSaveItemBtnPos[1], $aSaveItemBtnPos[2], $aSaveItemBtnPos[3], 0.75)
-	;WinClose($hWndItem, "")
 	Return True
 EndFunc
 
@@ -293,24 +281,18 @@ Func CheckSit($sText)
 EndFunc
 
 Func CheckSitKrg($sText)
-
     ; ลบช่องว่างหน้า/หลัง
     $sText = StringStripWS($sText, 3)
-
     For $i = 0 To UBound($ArraySitKrg) - 1
-
         ; ข้าม index ที่ยังไม่ได้กำหนดค่า
         If $ArraySitKrg[$i] = "" Then ContinueLoop
-
         ; เทียบแบบตรงตัว
         If StringStripWS($ArraySitKrg[$i], 3) = $sText Then
             Return True
         EndIf
-
     Next
 
     Return False
-
 EndFunc
 
 Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
@@ -350,7 +332,7 @@ Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRo
 	 Sleep(1200)
 		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
 	 Send("{ENTER}")
-	 WinClose($hWndEdit, "")
+	 ;WinClose($hWndEdit, "")
 	 Sleep(400)
      FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
 	 Local $b = 1

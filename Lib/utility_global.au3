@@ -842,9 +842,16 @@ Func ChiefComp($vDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 
     ;MouseClick("left",417, 426,1,1)
 	If IsArray($vDetail) Then
-		$cctextadd = $vDetail[13] & " " & $sSchool   ;CC for student is class and school
+		If UBound($vDetail) > 2 Then
+			$cctextadd = $vDetail[13] & " " & $sSchool   ;CC for student is class and school
+		Else
+			; elder $vDetail length = 2
+			Local $cup = $vDetail[0]
+			Local $date_exam = $vDetail[1]
+			$cctextadd = $sSchool &" "& $cup &" "& $date_exam
+		ElseIf
 	Else
-		$cctextadd = $sSchool  ;CC for telemed is school only
+		$cctextadd = $sSchool  ;CC for telemed is school only config $vDetail = ""
 	EndIf
 
     ClipPut($cctextadd)
@@ -876,11 +883,11 @@ Func ChiefComp($vDetail, $hStartTime, $oLogStudent, $hWndXp, $iRow)
 		ControlClick($hWndXp, "left", $ccclick)
 		ClipPut($cctextadd)
 		Sleep(100)
-		_Cpp_ctrlA()
+		Send("{ESC}") ;_Cpp_ctrlA()
 	    Sleep(700)
         _Cpp_ctrlV()
 	    Sleep(700)
-		Send("{ENTER}")
+		; Send("{ENTER}")
 		Sleep(800)
 		ControlClick($hWndXp, "left",  $ccadd)
 	EndIf

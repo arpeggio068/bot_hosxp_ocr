@@ -76,9 +76,9 @@ Global $iAddFluoride = $iDefaultValue8
 
 
 ;===================== start log path config ==================================================================
-$logStudent =        $gLogDir & "\BotLog\log_student.txt"
-$logStudenProgress = $gLogDir & "\BotLog\log_student_progress.txt"
-$logPrice =          $gLogDir & "\BotLog\log_student_price.txt"
+$logStudent =        $gLogDir & "\log_student.txt"
+$logStudenProgress = $gLogDir & "\log_student_progress.txt"
+$logPrice =          $gLogDir & "\log_student_price.txt"
 ;===================== end log path config ==================================================================
 
 
@@ -97,7 +97,7 @@ Global $aOpdPricePos = [159, 713, 1083, 988]
 ;=== start local OCR text config ==============================================================
 Global Const $sItemCheckTxt1 = "ตรวจสุขภาพช่องปาก โรงเรียนประถม"
 Global Const $sItemCheckTxt2 = "เคลือบฟลูออไรด์วานิช (ในเด็ก)"
-Global $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
+Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 ;=== end local OCR text config ==============================================================
 
 
@@ -324,35 +324,7 @@ Func SendDental($aArray, $hStartTime, $oLogStudent, $iRow)
 	Return True
 EndFunc
 
-Func SelectBoxEduRtb($hWnd)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $edu  = "TcxCustomComboBoxInnerEdit3"
-	ControlClick($hWnd, "left", $edu)
-	Sleep(100)
-	Local $iClick = 2
-	For $i = 1 To $iClick
-		ControlSend($hWnd, "",$edu , "{DOWN}")
-		Sleep(100)
-	Next
-EndFunc
-
-Func SelectBoxEduEkc($hWnd)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $edu  = "TcxCustomComboBoxInnerEdit3"
-	ControlClick($hWnd, "left", $edu)
-	Sleep(100)
-	Local $iClick = 5
-	For $i = 1 To $iClick
-		ControlSend($hWnd, "",$edu , "{DOWN}")
-		Sleep(100)
-	Next
-EndFunc
-
 Func SelectPtType($hWnd,$sShoolClass)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
 	Local $class_  = "TcxCustomComboBoxInnerEdit6"  ;TcxCustomComboBoxInnerEdit6
 	ControlClick($hWnd, "left", $class_)
 	Sleep(100)
@@ -386,8 +358,6 @@ Func SelectPtType($hWnd,$sShoolClass)
 EndFunc
 
 Func SelectPlace($hWnd)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
 	Local $place  = "TcxCustomComboBoxInnerEdit5"  ;TcxCustomComboBoxInnerEdit5
 	ControlClick($hWnd, "left", $place)
 	Sleep(100)
@@ -397,13 +367,34 @@ Func SelectPlace($hWnd)
 	Next
 EndFunc
 
+Func SelectBoxEduRtb($hWnd)
+	Local $edu  = "TcxCustomComboBoxInnerEdit3"
+	ControlClick($hWnd, "left", $edu)
+	Sleep(100)
+	Local $iClick = 2
+	For $i = 1 To $iClick
+		ControlSend($hWnd, "",$edu , "{DOWN}")
+		Sleep(100)
+	Next
+EndFunc
+
+Func SelectBoxEduEkc($hWnd)
+	Local $edu  = "TcxCustomComboBoxInnerEdit3"
+	ControlClick($hWnd, "left", $edu)
+	Sleep(100)
+	Local $iClick = 5
+	For $i = 1 To $iClick
+		ControlSend($hWnd, "",$edu , "{DOWN}")
+		Sleep(100)
+	Next
+EndFunc
+
+
 Func SelectClass($hWnd,$sShoolClass)
-	;Local $sTitle = "HOSxPDentalCareEntryForm"
-	;Local $hWnd = WinWait($sTitle, "", 10)
-	Local $class_  = "TcxCustomComboBoxInnerEdit2"
+    Local $class_  = "TcxCustomComboBoxInnerEdit2"
 	ControlClick($hWnd, "left", $class_)
 	Sleep(100)
-  Local $iClick = 1
+    Local $iClick = 1
    Switch $sShoolClass
 		Case 'อ.1'
            $iClick = 1
@@ -442,7 +433,8 @@ Func AddItem($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem  ;= WinWait("HOSxPDentalOperationEntryForm", "", 60)
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-	 ClipPut("priex")
+	Local Const $sKeySearch = "priex"
+	 ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()
 
@@ -455,14 +447,11 @@ Func AddItem($hStartTime, $oLogStudent, $iRow)
             Sleep(500)
             ContinueLoop
 		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
 			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			Sleep(400)
-			ClipPut("priex")
-            Sleep(700)
-		    _Cpp_ctrlA()
-			Sleep(400)
-			Send("{DELETE}")
-	        Sleep(700)
+			ClipPut($sKeySearch)
+            Sleep(500)
             _Cpp_ctrlV()
 			Sleep(1000)
 		EndIf
@@ -470,7 +459,7 @@ Func AddItem($hStartTime, $oLogStudent, $iRow)
 	WEnd
 	;ControlSend($hWndItem, "","" , "{ENTER}")
 	Send("{ENTER}")
-	Sleep(2000)
+	Sleep(1700)
 	ClickSaveOperation($hWndItem)
 	Sleep(500)
 	Return True
@@ -482,7 +471,8 @@ Func AddItemFluoride($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-	 ClipPut("fludex")
+	Local Const $sKeySearch = "fludex"
+	 ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()
 
@@ -495,14 +485,11 @@ Func AddItemFluoride($hStartTime, $oLogStudent, $iRow)
             Sleep(500)
             ContinueLoop
 		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
 			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			 Sleep(400)
-			ClipPut("fludex")
-            Sleep(700)
-		    _Cpp_ctrlA()
-			Sleep(400)
-			Send("{DELETE}")
-	        Sleep(700)
+			ClipPut($sKeySearch)
+            Sleep(500)
             _Cpp_ctrlV()
 			Sleep(1000)
 		EndIf
@@ -510,7 +497,7 @@ Func AddItemFluoride($hStartTime, $oLogStudent, $iRow)
 	WEnd
 	;ControlSend($hWndItem, "","" , "{ENTER}")
 	Send("{ENTER}")
-	Sleep(2000)
+	Sleep(1700)
 	ClickSaveOperation($hWndItem)
 	Sleep(500)
 	Return True
@@ -520,28 +507,32 @@ EndFunc
 
 ;=============================== start sit function =============================================================================
 Func CheckSit($sText)
-    Local $chk  = False
-	For $i = 0 To UBound($ArraySit) - 1
-         If $ArraySit[$i] = $sText Then
-			 $chk = True
-			 ExitLoop
-		 EndIf
+    $sText = StringStripWS($sText, 3)
+
+    For $i = 0 To UBound($ArraySit) - 1
+        If StringStripWS($ArraySit[$i], 3) = $sText Then
+            Return True
+        EndIf
     Next
-	;If $chk Then MsgBox($MB_SYSTEMMODAL, "", "The text in Edit1 is: " & $sText)
-	Return $chk
+
+    Return False
 EndFunc
 
 Func CheckSitKrg($sText)
-    Local $chk  = False
-	For $i = 0 To UBound($ArraySitKrg) - 1
-         If $ArraySitKrg[$i] = $sText Then
-			 $chk = True
-			 ExitLoop
-		 EndIf
+    ; ลบช่องว่างหน้า/หลัง
+    $sText = StringStripWS($sText, 3)
+    For $i = 0 To UBound($ArraySitKrg) - 1
+        ; ข้าม index ที่ยังไม่ได้กำหนดค่า
+        If $ArraySitKrg[$i] = "" Then ContinueLoop
+        ; เทียบแบบตรงตัว
+        If StringStripWS($ArraySitKrg[$i], 3) = $sText Then
+            Return True
+        EndIf
     Next
-	;If $chk Then MsgBox($MB_SYSTEMMODAL, "", "The text in Edit1 is: " & $sText)
-	Return $chk
+
+    Return False
 EndFunc
+
 
 Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
 	While True
@@ -580,7 +571,7 @@ Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRo
 	 Sleep(1200)
 		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
 	 Send("{ENTER}")
-	 WinClose($hWndEdit, "")
+	 ;WinClose($hWndEdit, "")
 	 Sleep(400)
      FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
 	 Local $b = 1
@@ -603,8 +594,7 @@ EndFunc
 
 ;=============================== start save function ============================================================================
 ; reuse 100% with utility_global.au FinalSave1 Select021 FinalSave2 FinalSave2Krg
-;===============================  end save function ============================================================================================================
-
+;===============================  end save function ===============================================================================
 
 
 ;=============================== start short cut F1 F4 function ========================================================================
@@ -748,7 +738,6 @@ Func BotLoop()
 	  FileWrite($oLogStudentProgress, "Start Init Loading Loop R= "&$i+1&@CRLF)
 
 	  ;== start hos xp loading loop ===================================
-
 	  Local $bAllowAppointLogSend = True
 	   While True
 		    Sleep(1000)
@@ -791,7 +780,6 @@ Func BotLoop()
 	   If $bFinanceLock Then  ContinueLoop
 
 	   If $bTodayAppoint And Not $bAllowRecWithTodayAppoint Then ContinueLoop
-
 
 	   ContXp2()
 	   ;Local $ttest = TimerDiff($hStartTime)
