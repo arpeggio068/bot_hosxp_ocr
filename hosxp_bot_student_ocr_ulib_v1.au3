@@ -87,10 +87,10 @@ $sReqPath = "query_student"
 ;=== end telegram  and database request config ===============================================
 
 
-;=== start local picture config ==============================================================
-Global $sOpdPrice1 =   $gMatchPicDir &  "\opd_price1.png"   ;ข้อความ ค่าบริการผู้ป่วยนอก พื้นสีฟ้า
-Global $sOpdPrice2 =   $gMatchPicDir & "\opd_price2.png"  ;ข้อความ ค่าบริการผู้ป่วยนอก ไม่มีพื้น
-Global $aOpdPricePos = [159, 713, 1083, 988]
+;=== start local picture config All Variable Use From Lib  ================================================
+;Global $sOpdPrice1 =   $gMatchPicDir &  "\opd_price1.png"   ;ข้อความ ค่าบริการผู้ป่วยนอก พื้นสีฟ้า
+;Global $sOpdPrice2 =   $gMatchPicDir & "\opd_price2.png"  ;ข้อความ ค่าบริการผู้ป่วยนอก ไม่มีพื้น
+;Global $aOpdPricePos = [159, 713, 1083, 988]
 ;=== end local picture config =================================================================
 
 
@@ -506,6 +506,7 @@ EndFunc
 
 
 ;=============================== start sit function =============================================================================
+; SetZeroPrice
 Func CheckSit($sText)
     $sText = StringStripWS($sText, 3)
 
@@ -531,63 +532,6 @@ Func CheckSitKrg($sText)
     Next
 
     Return False
-EndFunc
-
-
-Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
-	While True
-		if FindToCon($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
-			FindToClickRt($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt($sOpdPrice2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		EndIf
-        Sleep(500)
-		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
-	 Local  $hWndEdit
-	 Local $a = 1
-	 While $a < 10
-		 Sleep(1000)
-		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		 If $hWndEdit Then
-			 Sleep(1000)
-			 ExitLoop
-		 Else
-			 ;Sleep(1000)
-			 ControlSend($hWndXp, "","" , "q")
-			 Sleep(2000)
-		 EndIf
-		 $a += 1
-	 WEnd
-	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
-	 Sleep(1000)
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
-	 Sleep(1200)
-		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
-	 Send("{ENTER}")
-	 ;WinClose($hWndEdit, "")
-	 Sleep(400)
-     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
-	 Local $b = 1
-	 While $b < 5
-		Sleep(300)
-		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		if($hWndEdit) Then
-			Sleep(1000)
-			ControlClick($hWndEdit, "left", "TcxButton1")
-			Sleep(1200)
-			WinClose($hWndEdit, "")
-			Sleep(400)
-		EndIf
-		$b += 1
-    WEnd
-	Return True
 EndFunc
 ;===============================  end sit function =============================================================================
 
@@ -838,7 +782,7 @@ Func BotLoop()
 		Sleep(750)
 		ContXp2()
 		FileWrite($oLogStudentProgress, "Start Record CC And Allergy R= "&$i+1&@CRLF)
-		ChiefComp($aDental ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
+		ChiefComp($aDental ,$hStartTime, $oLogStudent, $hWndXp, $i+1)  ; โยนทั้งก้อน array เพื่อใช้ $aDental[13] เชื่อมข้อความระดับชั้น
         Allergy()
 		if Number($sBw) > 0 Then
 			;CtrlSendDt($hWndXp, "TcxCustomInnerTextEdit59", $sBw)
@@ -870,7 +814,7 @@ Func BotLoop()
        ContXp2()
 	   FileWrite($oLogStudentProgress, "Start AddItem Func R= "&$i+1&@CRLF)
        AddItem($hStartTime,$oLogStudent,$i+1)
-	   FileWrite($oLogStudentProgress, "End AddItem Func Then Find Task Pic R= "&$i+1&@CRLF)
+	   FileWrite($oLogStudentProgress, "End AddItem Func  R= "&$i+1&@CRLF)
 
 	    While True
 			Sleep(500)
@@ -913,7 +857,17 @@ Func BotLoop()
 			FileWrite($oLogPrice, "Set Zero Price R= "&$i+1&", ")
 			Sleep(300)
 			FileWrite($oLogStudentProgress, "End SetZeroPrice Func R= "&$i+1&@CRLF)
-	    ElseIf  CheckSitKrg($sSit) Then
+		EndIf
+
+		If CheckSit($sSit) Then
+			FileWrite($oLogStudentProgress, "Start SetZeroPrice Func R= "&$i+1&@CRLF)
+			SetZeroPrice($hWndXp,$hStartTime,$oLogStudent, $oLogStudentProgress, $i+1)
+			FileWrite($oLogPrice, "Set Zero Price R= "&$i+1&", ")
+			Sleep(300)
+			FileWrite($oLogStudentProgress, "End SetZeroPrice Func R= "&$i+1&@CRLF)
+		EndIf
+
+	    If  CheckSitKrg($sSit) Then
 			$bSitKrg = True
 			FileWrite($oLogPrice, "Send KRG R= "&$i+1&", ")
 			Sleep(300)

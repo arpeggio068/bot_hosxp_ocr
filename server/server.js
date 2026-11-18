@@ -70,8 +70,7 @@ app.post("/query_telemed", async (req, res) => {
         END AS lst,
         COALESCE(pbw.bw, 0)::int AS bw
     FROM ovst
-    LEFT JOIN ovst_fee_schedule ofs
-        ON ofs.vn = ovst.vn
+    LEFT JOIN ovst_fee_schedule ofs ON ofs.vn = ovst.vn
     LEFT JOIN (
         SELECT
             opdscreen.vn,
@@ -87,9 +86,7 @@ app.post("/query_telemed", async (req, res) => {
         WHERE opdscreen.hn = $1
           AND opdscreen.bw IS NOT NULL
         ORDER BY vn
-    ) AS pbw
-        ON pbw.hn = ovst.hn
-       AND pbw.flag_last_vn = '1'
+    ) AS pbw ON pbw.hn = ovst.hn AND pbw.flag_last_vn = '1'
     WHERE ovst.hn = $1
       AND ovst.vstdate = CURRENT_DATE
     ORDER BY ovst.vn DESC
@@ -169,8 +166,7 @@ app.post("/query_student", async (req, res) => {
         END AS lst,
         COALESCE(pbw.bw, 0)::int AS bw
     FROM ovst
-    LEFT JOIN ovst_fee_schedule ofs
-        ON ofs.vn = ovst.vn
+    LEFT JOIN ovst_fee_schedule ofs ON ofs.vn = ovst.vn
     LEFT JOIN (
         SELECT
             opdscreen.vn,
@@ -186,9 +182,7 @@ app.post("/query_student", async (req, res) => {
         WHERE opdscreen.hn = $1
           AND opdscreen.bw IS NOT NULL
         ORDER BY vn
-    ) AS pbw
-        ON pbw.hn = ovst.hn
-       AND pbw.flag_last_vn = '1'
+    ) AS pbw ON pbw.hn = ovst.hn AND pbw.flag_last_vn = '1'
     WHERE ovst.hn = $1
       AND ovst.vstdate = CURRENT_DATE
     ORDER BY ovst.vn DESC

@@ -71,32 +71,29 @@ Global $iSleepAfterLoad = $iDefaultValue7
 
 
 ;===================== start log path config ==================================================================
-$logStudent =        $gLogDir & "log_elderly.txt"
+$logStudent =              $gLogDir & "log_elderly.txt"
 $logStudenProgress = $gLogDir & "\log_elderly_progress.txt"
-$logPrice =          $gLogDir & "\log_elderly_price.txt"
+$logPrice =                  $gLogDir & "\log_elderly_price.txt"
 ;===================== end log path config ==================================================================
 
 
 ;=== start telegram and database request config ===============================================
-$sReqPath = "query_elder"
+$sReqPath = "query_telemed"
 ;=== end telegram  and database request config ===============================================
 
 
 
-;=== start local picture config ==============================================================
-Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
-Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
-
-Global Const $sOpdPrice1 =   $gMatchPicDir &  "\opd_price1.png"   ;ข้อความ ค่าบริการผู้ป่วยนอก พื้นสีฟ้า
-Global Const $sOpdPrice2 =   $gMatchPicDir & "\opd_price2.png"  ;ข้อความ ค่าบริการผู้ป่วยนอก ไม่มีพื้น
-
-Global Const $aOpdPricePos = [159, 713, 1083, 988]
+;=== start local picture config  All Variable Use From Lib ==================================================
+; Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
+; Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
+; Global Const $sOpdPrice1 =   $gMatchPicDir &  "\opd_price1.png"   ;ข้อความ ค่าบริการผู้ป่วยนอก พื้นสีฟ้า
+; Global Const $sOpdPrice2 =   $gMatchPicDir & "\opd_price2.png"  ;ข้อความ ค่าบริการผู้ป่วยนอก ไม่มีพื้น
+; Global Const $aOpdPricePos = [159, 713, 1083, 988]
 ;=== end local picture config =================================================================
 
 
 
 ;=== start local OCR text config ==============================================================
-
 Global Const $sItemCheckTxt1 = "ตรวจสุขภาพช่องปากกลุ่มเสี่ยง ผู้สูงอายุ นอกหน่วยบริการ"
 Global Const $sItemCheckTxt2 = "ฝึกแปรงฟันแบบลงมือปฏิบัติ (ไม่รวม plaque control)"
 Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
@@ -127,11 +124,11 @@ $ArraySit[19] = "90"  ;ชำระเงินต่างชาติ
 $ArraySit[20] = "99d"  ;รายได้น้อย นอกเขต  d=op anywhere ในจังหวัด
 
 
-Global $ArraySitUC[4] = []
-$ArraySitUC[0] = "50"  ;12-59 นอกเขต
-$ArraySitUC[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจังหวัด
-$ArraySitUC[2] = "56"  ;12-59 ในเขต
-$ArraySitUC[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
+Global $ArraySit30B[4] = []
+$ArraySit30B[0] = "50"  ;12-59 นอกเขต
+$ArraySit30B[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจังหวัด
+$ArraySit30B[2] = "56"  ;12-59 ในเขต
+$ArraySit30B[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
 
 
 Global $aCheckPttype[11] = ["17", "19", "21", "28", "30", "32", "37", "44", "50", "59", "99"]
@@ -455,7 +452,7 @@ Func AddItemToothBrush($hStartTime, $oLogStudent, $iRow)
 
 	While True
 		Sleep(900)
-		if FindToConOCR($sItemCheckTxt1, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+		if FindToConOCR($sItemCheckTxt2, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
 			ExitLoop
 		ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
             _OCRCheckDeadline()
@@ -483,11 +480,24 @@ EndFunc
 
 
 ;=============================== start sit function =============================================================================
+; SetZeroPrice SetZeroPrice30B
 Func CheckSit($sText)
     $sText = StringStripWS($sText, 3)
 
     For $i = 0 To UBound($ArraySit) - 1
         If StringStripWS($ArraySit[$i], 3) = $sText Then
+            Return True
+        EndIf
+    Next
+
+    Return False
+EndFunc
+
+Func CheckSit30B($sText)
+    $sText = StringStripWS($sText, 3)
+
+    For $i = 0 To UBound($ArraySit30B) - 1
+        If StringStripWS($ArraySit30B[$i], 3) = $sText Then
             Return True
         EndIf
     Next
@@ -508,119 +518,6 @@ Func CheckSitKrg($sText)
     Next
 
     Return False
-EndFunc
-
-
-Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
-	While True
-		if FindToCon($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
-			FindToClickRt($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt($sOpdPrice2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		EndIf
-        Sleep(500)
-		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
-	 Local  $hWndEdit
-	 Local $a = 1
-	 While $a < 10
-		 Sleep(1000)
-		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		 If $hWndEdit Then
-			 Sleep(1000)
-			 ExitLoop
-		 Else
-			 ;Sleep(1000)
-			 ControlSend($hWndXp, "","" , "q")
-			 Sleep(2000)
-		 EndIf
-		 $a += 1
-	 WEnd
-	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
-	 Sleep(1000)
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
-	 Sleep(1200)
-		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
-	 Send("{ENTER}")
-	 ;WinClose($hWndEdit, "")
-	 Sleep(400)
-     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
-	 Local $b = 1
-	 While $b < 5
-		Sleep(300)
-		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		if($hWndEdit) Then
-			Sleep(1000)
-			ControlClick($hWndEdit, "left", "TcxButton1")
-			Sleep(1200)
-			WinClose($hWndEdit, "")
-			Sleep(400)
-		EndIf
-		$b += 1
-    WEnd
-	Return True
-EndFunc
-
-Func SetZeroPrice30($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
-	While True
-		if FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
-			FindToClickRt($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		EndIf
-        Sleep(500)
-		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
-	 Local  $hWndEdit
-	 Local $a = 1
-	 While $a < 10
-		 Sleep(1000)
-		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		 If $hWndEdit Then
-			 Sleep(1000)
-			 ExitLoop
-		 Else
-			 ;Sleep(1000)
-			 ControlSend($hWndXp, "","" , "q")
-			 Sleep(2000)
-		 EndIf
-		 $a += 1
-	 WEnd
-	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
-	 Sleep(1000)
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
-	 Sleep(1200)
-		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
-	 Send("{ENTER}")
-	 Sleep(400)
-	 ;WinClose($hWndEdit, "")
-     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
-	 Local $b = 1
-	 While $b < 5
-		Sleep(300)
-		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		if($hWndEdit) Then
-			Sleep(1000)
-			ControlClick($hWndEdit, "left", "TcxButton1")
-			Sleep(1200)
-			WinClose($hWndEdit, "")
-			Sleep(400)
-		EndIf
-		$b += 1
-    WEnd
-	Return True
 EndFunc
 ;===============================  end sit function =============================================================================
 
@@ -885,55 +782,60 @@ Func BotLoop()
 		ContXp2()
 		;Send("{F4}") hot key F4 not work in sometimes
 		FileWrite($oLogStudentProgress, "Start FindToClick F4 Menu R= "&$i+1&@CRLF)
-		FindToClick(@ScriptDir&$sF4, $aF4Pos[0], $aF4Pos[1], $aF4Pos[2], $aF4Pos[3], 0.75) ;go to add item
-
+		Click_F4($hWndXp, $hStartTime, $oLogStudent, $i + 1)   ;send F4 shortcut key
 		While 1
-			Sleep(1000)
-			if FindToClick(@ScriptDir&$sAddItem, $aAddItemBtnPos[0], $aAddItemBtnPos[1], $aAddItemBtnPos[2], $aAddItemBtnPos[3], 0.80) Then ExitLoop ;add item pic  TcxButton28
-			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
+			Sleep(200)
+			Local $hDialogBug = WinGetHandle("FindAllItemDialog")
+			; ถ้าไม่พบหน้าต่าง ให้ออกจาก loop
+			If Not $hDialogBug Then ExitLoop
+			; ถ้าพบหน้าต่าง ให้ปิด
+			WinKill($hDialogBug)
+			Sleep(200)
+			ExitMaxTime($hStartTime, $oLogStudent, $i + 1)
 		WEnd
+
+		ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $i+1)
+
        FileWrite($oLogStudentProgress, "End Click AddItem PlusBtn Success R= "&$i+1&@CRLF)
        ContXp2()
+
 	   FileWrite($oLogStudentProgress, "Start AddItem Func R= "&$i+1&@CRLF)
        AddItem($hStartTime, $oLogStudent, $i+1)
+	   FileWrite($oLogStudentProgress, "End AddItem Func  R= "&$i+1&@CRLF)
 
-	   FileWrite($oLogStudentProgress, "End AddItem Func Then Find Task Pic R= "&$i+1&@CRLF)
-	   While True
-			    Sleep(500)
-              	if Findtocon(@ScriptDir&$sTask, $aTaskPos[0], $aTaskPos[1], $aTaskPos[2], $aTaskPos[3], 0.80)  Then
-					ExitLoop
-			    Else
-					Sleep(700)
-					FindToClick(@ScriptDir&$sSaveItem, $aSaveItemBtnPos[0], $aSaveItemBtnPos[1], $aSaveItemBtnPos[2], $aSaveItemBtnPos[3], 0.75)
-			    EndIf
-				ExitMaxTime($hStartTime, $oLogStudent, $i+1)
-	   WEnd
+	    While True
+			Sleep(500)
+			Local $hOperationForm = WinGetHandle($sOperationBoxTitle)
+			If $hOperationForm = 0 Then ExitLoop
+			If Not _WinAPI_IsWindowVisible($hOperationForm) Then ExitLoop
+			Sleep(700)
+			ClickSaveOperation($hOperationForm)
+			ExitMaxTime($hStartTime, $oLogStudent, $i + 1)
+	    WEnd
+
 	   FileWrite($oLogStudentProgress, "AddItem Saved Then Close Add Item Box R= "&$i+1&@CRLF)
        ContXp2()
 
 	   FileWrite($oLogStudentProgress, "Start Click AddItem ToothBrush PlusBtn R= "&$i+1&@CRLF)
-	   While 1
-			Sleep(1000)
-			if FindToClick(@ScriptDir&$sAddItem, $aAddItemBtnPos[0], $aAddItemBtnPos[1], $aAddItemBtnPos[2], $aAddItemBtnPos[3], 0.80) Then ExitLoop ;add item pic  TcxButton28
-			ExitMaxTime($hStartTime,$oLogStudent,$i+1)
-		WEnd
+	   ClickAddOperation($hWndXp, $hStartTime, $oLogStudent, $i+1)
        FileWrite($oLogStudentProgress, "End Click AddItem ToothBrush PlusBtn R= "&$i+1&@CRLF)
+
        ContXp2()
 
 	   FileWrite($oLogStudentProgress, "Start AddItem ToothBrush Func R= "&$i+1&@CRLF)
        AddItemToothBrush($hStartTime, $oLogStudent, $i+1)
-
 	   FileWrite($oLogStudentProgress, "End AddItem ToothBrush Func Then Find Task Pic R= "&$i+1&@CRLF)
-		While True
-			    Sleep(500)
-              	if Findtocon(@ScriptDir&$sTask, $aTaskPos[0], $aTaskPos[1], $aTaskPos[2], $aTaskPos[3], 0.80)  Then
-					ExitLoop
-			    Else
-					Sleep(700)
-					FindToClick(@ScriptDir&$sSaveItem, $aSaveItemBtnPos[0], $aSaveItemBtnPos[1], $aSaveItemBtnPos[2], $aSaveItemBtnPos[3], 0.75)
-			    EndIf
-				ExitMaxTime($hStartTime, $oLogStudent, $i+1)
-		WEnd
+
+		 While True
+			Sleep(500)
+			Local $hOperationForm = WinGetHandle($sOperationBoxTitle)
+			If $hOperationForm = 0 Then ExitLoop
+			If Not _WinAPI_IsWindowVisible($hOperationForm) Then ExitLoop
+			Sleep(700)
+			ClickSaveOperation($hOperationForm)
+			ExitMaxTime($hStartTime, $oLogStudent, $i + 1)
+		 WEnd
+
         FileWrite($oLogStudentProgress, "AddItem ToothBrush Saved Then Close Add Item Box R= "&$i+1&@CRLF)
 		ContXp2()
 
@@ -943,11 +845,22 @@ Func BotLoop()
 			FileWrite($oLogPrice, "Set Zero Price R= "&$i+1&", ")
 			Sleep(300)
 			FileWrite($oLogStudentProgress, "End SetZeroPrice Func R= "&$i+1&@CRLF)
-	    ElseIf  CheckSitKrg($sSit) Then
+		EndIf
+
+		If CheckSit30B($sSit) Then
+			FileWrite($oLogStudentProgress, "Start SetZeroPrice 30 Baht Func R= "&$i+1&@CRLF)
+			SetZeroPrice30B($hWndXp,$hStartTime,$oLogStudent, $oLogStudentProgress, $i+1)
+			FileWrite($oLogPrice, "Set Zero Price 30 Baht R= "&$i+1&", ")
+			Sleep(300)
+			FileWrite($oLogStudentProgress, "End SetZeroPrice 30 Baht Func R= "&$i+1&@CRLF)
+		EndIf
+
+	    If  CheckSitKrg($sSit) Then
 			$bSitKrg = True
 			FileWrite($oLogPrice, "Send KRG R= "&$i+1&", ")
 			Sleep(300)
 		EndIf
+
 		FileWrite($oLogStudentProgress, "End CheckSit Condition R= "&$i+1&@CRLF)
         ExitMaxTime($hStartTime,$oLogStudent,$i+1)
         ;Sleep(500)
@@ -971,9 +884,6 @@ Func BotLoop()
 		$sSit = ""
 		$sBw = "0"
 		$sQueue = "0"
-		$bTodayAppoint = False
-		$bFinanceLock = False
-		$bDentistLock = False
 		$bSitKrg = False
 		$iCnt += 1
 		If ($iCnt = 5) Then
@@ -1049,7 +959,7 @@ _OpenCV_Startup()  ;
 _CppDllOpen()
 $gTelegramToken = GetEnv("TELEGRAM_TOKEN")
 $gTelegramChatID = GetEnv("TELEGRAM_CHAT")
-StartServer()
+If Not StartServer() Then Exit(1)
 Sleep(1000)
 BotLoop()
 _OpenCV_Shutdown()

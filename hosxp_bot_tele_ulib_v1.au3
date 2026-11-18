@@ -36,7 +36,7 @@ If FileExists($sConfigFile) Then
 EndIf
 
 #Region ### START Koda GUI section ### Form=
-Global $Form1 = GUICreate("Elderly Bot", 634, 502, 192, 124)
+Global $Form1 = GUICreate("Telemed Bot", 634, 502, 192, 124)
 Global $Input1 = GUICtrlCreateInput($iDefaultValue1, 24, 32, 577, 21)
 Global $Input2 = GUICtrlCreateInput($iDefaultValue2, 24, 88, 289, 21)
 Global $Input3 = GUICtrlCreateInput($iDefaultValue3, 24, 144, 577, 21)
@@ -91,20 +91,17 @@ Global Const $sTeleItem40Down = $gMatchPicDir &  "\xp_item_found_telemed40down.p
 Global Const $sTeleItem40Up =   $gMatchPicDir & "\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y
 Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 
-
-Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
-Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
-Global Const $aOpdPricePos = [159, 713, 1083, 988]
+; Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
+; Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
+; Global Const $aOpdPricePos = [159, 713, 1083, 988]
 ;=== end local picture config =================================================================
 
 
-
-Global $ArraySit[4]  ;สิทธิที่ต้องแก้ค่าบริการ 30 บาทเป็น 0 บาท ส่งกลับบ้าน 103
-$ArraySit[0] = "50"  ;12-59 นอกเขต
-$ArraySit[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจังหวัด
-$ArraySit[2] = "56"  ;12-59 ในเขต
-$ArraySit[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
-
+Global $ArraySit30B[4] = []
+$ArraySit30B[0] = "50"  ;12-59 นอกเขต
+$ArraySit30B[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจังหวัด
+$ArraySit30B[2] = "56"  ;12-59 ในเขต
+$ArraySit30B[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
 
 Global $aCheckPttype[11] = ["17", "19", "21", "28", "30", "32", "37", "44", "50", "59", "99"]
 
@@ -268,11 +265,11 @@ EndFunc
 
 
 ;=============================== start sit function =============================================================================
-Func CheckSit($sText)
+Func CheckSit30B($sText)
     $sText = StringStripWS($sText, 3)
 
-    For $i = 0 To UBound($ArraySit) - 1
-        If StringStripWS($ArraySit[$i], 3) = $sText Then
+    For $i = 0 To UBound($ArraySit30B) - 1
+        If StringStripWS($ArraySit30B[$i], 3) = $sText Then
             Return True
         EndIf
     Next
@@ -293,62 +290,6 @@ Func CheckSitKrg($sText)
     Next
 
     Return False
-EndFunc
-
-Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
-	While True
-		if FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
-			FindToClickRt($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		EndIf
-        Sleep(500)
-		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
-	 Local  $hWndEdit
-	 Local $a = 1
-	 While $a < 10
-		 Sleep(1000)
-		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		 If $hWndEdit Then
-			 Sleep(1000)
-			 ExitLoop
-		 Else
-			 ;Sleep(1000)
-			 ControlSend($hWndXp, "","" , "q")
-			 Sleep(2000)
-		 EndIf
-		 $a += 1
-	 WEnd
-	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
-	 Sleep(1000)
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
-	 Sleep(1200)
-		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
-	 Send("{ENTER}")
-	 ;WinClose($hWndEdit, "")
-	 Sleep(400)
-     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
-	 Local $b = 1
-	 While $b < 5
-		Sleep(300)
-		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		if($hWndEdit) Then
-			Sleep(1000)
-			ControlClick($hWndEdit, "left", "TcxButton1")
-			Sleep(1200)
-			WinClose($hWndEdit, "")
-			Sleep(400)
-		EndIf
-		$b += 1
-    WEnd
-	Return True
 EndFunc
 ;===============================  end sit function =============================================================================
 
@@ -632,17 +573,20 @@ Func BotLoop()
        ContXp2()
 
 
-        If CheckSit($sSit) Then
-			FileWrite($oLogStudentProgress, "Start SetZeroPrice Func R= "&$i+1&@CRLF)
-			SetZeroPrice($hWndXp,$hStartTime,$oLogStudent, $oLogStudentProgress, $i+1)
-			FileWrite($oLogPrice, "Set Zero Price R= "&$i+1&", ")
+        If CheckSit30B($sSit) Then
+			FileWrite($oLogStudentProgress, "Start SetZeroPrice30B Func R= "&$i+1&@CRLF)
+			SetZeroPrice30B($hWndXp,$hStartTime,$oLogStudent, $oLogStudentProgress, $i+1)
+			FileWrite($oLogPrice, "Set Zero Price 30B R= "&$i+1&", ")
 			Sleep(300)
-			FileWrite($oLogStudentProgress, "End SetZeroPrice Func R= "&$i+1&@CRLF)
-	    ElseIf  CheckSitKrg($sSit) Then
+			FileWrite($oLogStudentProgress, "End SetZeroPrice30B Func R= "&$i+1&@CRLF)
+		EndIf
+
+	    If  CheckSitKrg($sSit) Then
 			$bSitKrg = True
 			FileWrite($oLogPrice, "Send KRG R= "&$i+1&", ")
 			Sleep(300)
 		EndIf
+
 		FileWrite($oLogStudentProgress, "End CheckSit Condition R= "&$i+1&@CRLF)
         ExitMaxTime($hStartTime,$oLogStudent,$i+1)
         ;Sleep(500)
