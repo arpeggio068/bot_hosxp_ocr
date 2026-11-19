@@ -86,9 +86,7 @@ $sReqPath = "query_telemed"
 
 
 ;=== start local picture config ==============================================================
-; Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
-; Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
-; Global Const $aOpdPricePos = [159, 713, 1083, 988]
+; use from global lib
 ;=== end local picture config =================================================================
 
 ;=== start local OCR text config ==============================================================
@@ -147,13 +145,12 @@ $ArraySitKrg[14] = "99o"  ;รายได้น้อย นอกเขต  o=
 
 
 ;=============================== start record Hx function ========================================================================
-;ChiefComp Allergy ClickSaveOperation AddItemOCR1 AddItemOCR2
-
+;ChiefComp Allergy AddItemOCR1 AddItemOCR2 ClickSaveOperation
 ;===============================  end record Hx function ========================================================================
 
 
 
-;=============================== start sit function =============================================================================
+;=============================== start local sit function =============================================================================
 Func CheckSit30B($sText)
     $sText = StringStripWS($sText, 3)
 
@@ -180,7 +177,7 @@ Func CheckSitKrg($sText)
 
     Return False
 EndFunc
-;===============================  end sit function =============================================================================
+;===============================  end local sit function =============================================================================
 
 
 ;=============================== start save function ============================================================================

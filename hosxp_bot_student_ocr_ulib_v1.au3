@@ -314,7 +314,7 @@ EndFunc
 
 
 ;=============================== start record Hx function ========================================================================
-;ChiefComp Allergy ClickSaveOperation AddItemOCR1 AddItemOCR2
+;ChiefComp Allergy AddItemOCR1 AddItemOCR2 ClickSaveOperation
 ;===============================  end record Hx function ========================================================================
 
 
