@@ -92,9 +92,11 @@ $sReqPath = "query_telemed"
 ;=== end local picture config =================================================================
 
 ;=== start local OCR text config ==============================================================
-Global Const $sItemCheckTxt1 = "TELEMED อายุน้อยกว่า 40 ปี"
-Global Const $sItemCheckTxt2 = "TELEMED อายุ 40 ปีขึ้นไป"
-Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
+$sItemCheckTxt1 = "TELEMED อายุน้อยกว่า 40 ปี"
+$sItemCheckTxt2 = "TELEMED อายุ 40 ปีขึ้นไป"
+
+$sGkeySearch1 = "telemed1"
+$sGkeySearch2 = "telemed2"
 ;=== end local OCR text config ==============================================================
 
 
@@ -145,83 +147,8 @@ $ArraySitKrg[14] = "99o"  ;รายได้น้อย นอกเขต  o=
 
 
 ;=============================== start record Hx function ========================================================================
-;ChiefComp Allergy ClickSaveOperation
+;ChiefComp Allergy ClickSaveOperation AddItemOCR1 AddItemOCR2
 
-Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
-    _OCRSetRow($hStartTime, $oLogStudent, $iRow)
-	Local $hWndItem
-	$hWndItem = WinGetHandle($sOperationBoxTitle)
-
-	Local Const $sKeySearch = "telemed1"
-     ClipPut($sKeySearch)
-	 Sleep(300)
-	_Cpp_ctrlV()
-
-	While True
-		Sleep(900)
-		if FindToConOCR($sItemCheckTxt1, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
-			ExitLoop
-        ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
-            _OCRCheckDeadline()
-            Sleep(500)
-            ContinueLoop
-		Else
-			Send("{ESC}") ;reset form and no active click
-			Sleep(500)
-			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			ClipPut($sKeySearch)
-            Sleep(500)
-            _Cpp_ctrlV()
-			Sleep(1000)
-		EndIf
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-	Send("{ENTER}")
-	Sleep(1700)
-	ClickSaveOperation($hWndItem)
-	; รอให้โปรแกรมประมวลผลการบันทึก
-	Sleep(500)
-	Return True
-
-EndFunc
-
-
-Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
-    _OCRSetRow($hStartTime, $oLogStudent, $iRow)
-	Local $hWndItem
-	$hWndItem = WinGetHandle($sOperationBoxTitle)
-
-     Local Const $sKeySearch = "telemed2"
-     ClipPut($sKeySearch)
-	 Sleep(300)
-	_Cpp_ctrlV()
-
-	While True
-		Sleep(900)
-		if FindToConOCR($sItemCheckTxt2, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
-			ExitLoop
-        ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
-            _OCRCheckDeadline()
-            Sleep(500)
-            ContinueLoop
-		Else
-			Send("{ESC}") ;reset form and no active click
-			Sleep(500)
-			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			ClipPut($sKeySearch)
-            Sleep(500)
-            _Cpp_ctrlV()
-			Sleep(1000)
-		EndIf
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-
-	Send("{ENTER}")
-	Sleep(1700)
-	ClickSaveOperation($hWndItem)
-	Sleep(500)
-	Return True
-EndFunc
 ;===============================  end record Hx function ========================================================================
 
 
@@ -516,9 +443,9 @@ Func BotLoop()
 
 	   FileWrite($oLogStudentProgress, "Start AddItem Func R= "&$i+1&@CRLF)
 	   If $iAgeVal < 40 Then
-		   AddItemAge40Down($hStartTime, $oLogStudent, $i+1)
+		   AddItemOCR1($hStartTime, $oLogStudent, $i+1)
 	   Else
-		   AddItemAge40Up($hStartTime, $oLogStudent, $i+1)
+		   AddItemOCR2($hStartTime, $oLogStudent, $i+1)
 	   EndIf
 	   FileWrite($oLogStudentProgress, "End AddItem Func Then check HOSxPDentalOperationEntryForm not invisible= "&$i+1&@CRLF)
 

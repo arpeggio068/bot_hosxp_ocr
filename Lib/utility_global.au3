@@ -115,6 +115,15 @@ Global Const $sLastOK =   $gMatchPicDir & "\xp_lastOK.png"
 Global Const $aLastOkPos = [728, 341, 1272, 701]
 ;=== end picture config =================================================================
 
+;=== start global OCR text config ==============================================================
+Global $sItemCheckTxt1 = ""
+Global $sItemCheckTxt2 = ""
+Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
+
+Global $sGkeySearch1 = ""
+Global $sGkeySearch2 = ""
+;=== end global OCR text config ==============================================================
+
 
 ;=============================== start utility function 1 ========================================================================
 Func Hkey()
@@ -1106,6 +1115,81 @@ Func Allergy()
 		Sleep(300)
   EndIf
 
+EndFunc
+
+Func AddItemOCR1($hStartTime, $oLogStudent, $iRow)
+	_OCRSetRow($hStartTime, $oLogStudent, $iRow)
+	Local $hWndItem  ;= WinWait("HOSxPDentalOperationEntryForm", "", 60)
+	$hWndItem = WinGetHandle($sOperationBoxTitle)
+
+	Local Const $sKeySearch = $sGkeySearch1 ;"priex"
+	 ClipPut($sKeySearch)
+	 Sleep(300)
+	_Cpp_ctrlV()
+
+	While True
+		Sleep(900)
+		if FindToConOCR($sItemCheckTxt1, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+			ExitLoop
+		ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
+            _OCRCheckDeadline()
+            Sleep(500)
+            ContinueLoop
+		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
+			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
+			ClipPut($sKeySearch)
+            Sleep(500)
+            _Cpp_ctrlV()
+			Sleep(1000)
+		EndIf
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+	WEnd
+	;ControlSend($hWndItem, "","" , "{ENTER}")
+	Send("{ENTER}")
+	Sleep(1700)
+	ClickSaveOperation($hWndItem)
+	Sleep(500)
+	Return True
+EndFunc
+
+
+Func AddItemOCR2($hStartTime, $oLogStudent, $iRow)
+	 _OCRSetRow($hStartTime, $oLogStudent, $iRow)
+	Local $hWndItem
+	$hWndItem = WinGetHandle($sOperationBoxTitle)
+
+	Local Const $sKeySearch = $sGkeySearch2 ;"fludex"
+	 ClipPut($sKeySearch)
+	 Sleep(300)
+	_Cpp_ctrlV()
+
+	While True
+		Sleep(1000)
+		if FindToConOCR($sItemCheckTxt2, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
+			ExitLoop
+		ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
+            _OCRCheckDeadline()
+            Sleep(500)
+            ContinueLoop
+		Else
+			Send("{ESC}") ;reset form and no active click
+			Sleep(500)
+			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
+			ClipPut($sKeySearch)
+            Sleep(500)
+            _Cpp_ctrlV()
+			Sleep(1000)
+		EndIf
+		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+	WEnd
+	;ControlSend($hWndItem, "","" , "{ENTER}")
+	Send("{ENTER}")
+	Sleep(1700)
+	ClickSaveOperation($hWndItem)
+	Sleep(500)
+	Return True
 EndFunc
 
 Func ClickSaveOperation($hWndItem)

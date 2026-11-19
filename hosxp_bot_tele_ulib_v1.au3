@@ -89,11 +89,9 @@ $sReqPath = "query_telemed"
 ;=== start local picture config ==============================================================
 Global Const $sTeleItem40Down = $gMatchPicDir &  "\xp_item_found_telemed40down.png"  ;ข้อความ telemed < 40 y
 Global Const $sTeleItem40Up =   $gMatchPicDir & "\xp_item_found_telemed40up.png"  ;ข้อความ telemed >= 40 y
-Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
 
-; Global Const $sOpdPrice30_1 =  $gMatchPicDir & "\opd_price30.png"   ;ข้อความ ค่าบริการ 30 บาท ไม่มีพื้น
-; Global Const $sOpdPrice30_2 =  $gMatchPicDir & "\opd_price30_2.png"  ;ข้อความ ค่าบริการ 30 บาท พื้นสีฟ้า
-; Global Const $aOpdPricePos = [159, 713, 1083, 988]
+$sGkeySearch1 = "telemed1"
+$sGkeySearch2 = "telemed2"
 ;=== end local picture config =================================================================
 
 
@@ -148,7 +146,7 @@ Func AddItemAge40Down($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-	Local Const $sKeySearch = "telemed1"
+	Local Const $sKeySearch = $sGkeySearch1
      ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()
@@ -182,7 +180,7 @@ Func AddItemAge40Up($hStartTime, $oLogStudent, $iRow)
 	Local $hWndItem
 	$hWndItem = WinGetHandle($sOperationBoxTitle)
 
-	Local Const $sKeySearch = "telemed2"
+	Local Const $sKeySearch = $sGkeySearch2
      ClipPut($sKeySearch)
 	 Sleep(300)
 	_Cpp_ctrlV()

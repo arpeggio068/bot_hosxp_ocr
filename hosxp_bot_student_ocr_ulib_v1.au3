@@ -95,9 +95,12 @@ $sReqPath = "query_student"
 
 
 ;=== start local OCR text config ==============================================================
-Global Const $sItemCheckTxt1 = "ตรวจสุขภาพช่องปาก โรงเรียนประถม"
-Global Const $sItemCheckTxt2 = "เคลือบฟลูออไรด์วานิช (ในเด็ก)"
-Global Const $aItemTxtPos = [417, 239, 1245, 658]  ;item txt position
+$sItemCheckTxt1 = "ตรวจสุขภาพช่องปาก โรงเรียนประถม"
+$sItemCheckTxt2 = "เคลือบฟลูออไรด์วานิช (ในเด็ก)"
+;$aItemTxtPos[4] = [417, 239, 1245, 658]  ;item txt position
+
+$sGkeySearch1 = "priex"
+$sGkeySearch2 = "fludex"
 ;=== end local OCR text config ==============================================================
 
 
@@ -311,81 +314,7 @@ EndFunc
 
 
 ;=============================== start record Hx function ========================================================================
-;ChiefComp Allergy ClickSaveOperation
-Func AddItem($hStartTime, $oLogStudent, $iRow)
-	_OCRSetRow($hStartTime, $oLogStudent, $iRow)
-	Local $hWndItem  ;= WinWait("HOSxPDentalOperationEntryForm", "", 60)
-	$hWndItem = WinGetHandle($sOperationBoxTitle)
-
-	Local Const $sKeySearch = "priex"
-	 ClipPut($sKeySearch)
-	 Sleep(300)
-	_Cpp_ctrlV()
-
-	While True
-		Sleep(900)
-		if FindToConOCR($sItemCheckTxt1, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
-			ExitLoop
-		ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
-            _OCRCheckDeadline()
-            Sleep(500)
-            ContinueLoop
-		Else
-			Send("{ESC}") ;reset form and no active click
-			Sleep(500)
-			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			ClipPut($sKeySearch)
-            Sleep(500)
-            _Cpp_ctrlV()
-			Sleep(1000)
-		EndIf
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-	;ControlSend($hWndItem, "","" , "{ENTER}")
-	Send("{ENTER}")
-	Sleep(1700)
-	ClickSaveOperation($hWndItem)
-	Sleep(500)
-	Return True
-EndFunc
-
-
-Func AddItemFluoride($hStartTime, $oLogStudent, $iRow)
-	 _OCRSetRow($hStartTime, $oLogStudent, $iRow)
-	Local $hWndItem
-	$hWndItem = WinGetHandle($sOperationBoxTitle)
-
-	Local Const $sKeySearch = "fludex"
-	 ClipPut($sKeySearch)
-	 Sleep(300)
-	_Cpp_ctrlV()
-
-	While True
-		Sleep(1000)
-		if FindToConOCR($sItemCheckTxt2, $aItemTxtPos[0], $aItemTxtPos[1], $aItemTxtPos[2], $aItemTxtPos[3], 60)  Then
-			ExitLoop
-		ElseIf @error Or $gOcrLastStatus <> "NO_MATCH" Then
-            _OCRCheckDeadline()
-            Sleep(500)
-            ContinueLoop
-		Else
-			Send("{ESC}") ;reset form and no active click
-			Sleep(500)
-			ControlClick($hWndItem, "left", "TcxCustomInnerTextEdit7")
-			ClipPut($sKeySearch)
-            Sleep(500)
-            _Cpp_ctrlV()
-			Sleep(1000)
-		EndIf
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	WEnd
-	;ControlSend($hWndItem, "","" , "{ENTER}")
-	Send("{ENTER}")
-	Sleep(1700)
-	ClickSaveOperation($hWndItem)
-	Sleep(500)
-	Return True
-EndFunc
+;ChiefComp Allergy ClickSaveOperation AddItemOCR1 AddItemOCR2
 ;===============================  end record Hx function ========================================================================
 
 
@@ -697,7 +626,7 @@ Func BotLoop()
 
        ContXp2()
 	   FileWrite($oLogStudentProgress, "Start AddItem Func R= "&$i+1&@CRLF)
-       AddItem($hStartTime,$oLogStudent,$i+1)
+       AddItemOCR1($hStartTime,$oLogStudent,$i+1)
 	   FileWrite($oLogStudentProgress, "End AddItem Func  R= "&$i+1&@CRLF)
 
 	    While True
@@ -721,7 +650,7 @@ Func BotLoop()
 			FileWrite($oLogStudentProgress, "End Click AddItemFluoride PlusBtn R= "&$i+1&@CRLF)
 			Sleep(50)
 			FileWrite($oLogStudentProgress, "Start AddItemFluoride Func R= "&$i+1&@CRLF)
-			AddItemFluoride($hStartTime, $oLogStudent, $i+1)
+			AddItemOCR2($hStartTime, $oLogStudent, $i+1)
 			While True
 				Sleep(500)
 				Local $hOperationForm = WinGetHandle($sOperationBoxTitle)
