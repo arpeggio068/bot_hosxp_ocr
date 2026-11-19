@@ -80,7 +80,7 @@ $logPrice =                  $gLogDir & "\log_elderly_price.txt"
 ;=== start telegram and database request config ===============================================
 $sReqPath = "query_telemed"
 ;=== end telegram  and database request config ===============================================
-
+Global $gAge_Y
 
 
 ;=== start local picture config  All Variable Use From Lib ==================================================
@@ -268,6 +268,11 @@ Func SelectPtType($hWnd)
 	ControlClick($hWnd, "left", $class_)
 	Sleep(200)
     Local $iClick = 4
+	If  Number($gAge_Y) < 60 Then  ;เลือก กลุ่มอื่นๆ
+		$iClick = 5
+	Else
+		$iClick = 4   ;เลือก กลุ่มผู้สูงอายุ
+	EndIf
 
    For $i = 1 To $iClick
 		ControlSend($hWnd, "",$class_ , "{DOWN}")
@@ -543,6 +548,7 @@ Func BotLoop()
 		FileWrite($oLogStudentProgress, "End Click Open Dental Loop R= "&$i+1&@CRLF)
 		ContXp2()
 
+		$gAge_Y = $aResult[$i][4]  ;age
         Local $aDental[11]
 		$aDental[0]  = $aResult[$i][5]  ;$pteeth
 		$aDental[1]  = $aResult[$i][6] ;$pcaries
@@ -582,8 +588,8 @@ Func BotLoop()
 		FileWrite($oLogStudentProgress, "Start Record CC And Allergy R= "&$i+1&@CRLF)
 
 		Local $vDetail[2]
-		$vDetail[0] = $vDetail[$i][0] ; cup
-		$vDetail[1] = $vDetail[$i][16] ; date exam
+		$vDetail[0] = $aResult[$i][0] ; cup
+		$vDetail[1] = $aResult[$i][16] ; date exam
 
 		ChiefComp($vDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
