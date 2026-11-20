@@ -430,7 +430,7 @@ Func BotLoop()
 	  ContXp2()
 
 	  Local $a = 1
-	  While $a < 10
+	  While $a < 10   ; วน loop 9 รอบ หากไม่่เจอเงื่อนไข exit loop จะได้ a = 10
 		  Sleep(500)
 		  $hDrgAllergy = WinGetHandle("[CLASS:THOSxPMedicationOrderDrugAllergyNoticeForm]")
 		  Sleep(100)
@@ -764,8 +764,8 @@ While 1
 			 ElseIf $iStartRow < 2 Or $iEndRow < $iStartRow Or Not IsInt($iStartRow) Or Not IsInt($iEndRow) Then
                 GUICtrlSetData($AlertLabel, "โปรดเลือกช่วงแถวข้อมูลให้ถูกต้อง!")
                 GUICtrlSetState($AlertLabel, $GUI_SHOW)
-			 ElseIf $iSleepAfterLoad < 2000 Or $iSleepAfterLoad > 10000 Or Not IsInt($iSleepAfterLoad) Then
-			    GUICtrlSetData($AlertLabel, "โปรดบันทึกค่า Delay ระว่าง 2000 ถึง 10000")
+			 ElseIf $iSleepAfterLoad < 1500 Or $iSleepAfterLoad > 10000 Or Not IsInt($iSleepAfterLoad) Then
+			    GUICtrlSetData($AlertLabel, "โปรดบันทึกค่า Delay ระว่าง 1500 ถึง 10000")
                 GUICtrlSetState($AlertLabel, $GUI_SHOW)
              Else
                 FileDelete($sConfigFile) ; Ensure clean write
