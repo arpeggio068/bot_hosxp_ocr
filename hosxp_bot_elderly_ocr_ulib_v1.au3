@@ -71,7 +71,7 @@ Global $iSleepAfterLoad = $iDefaultValue7
 
 
 ;===================== start log path config ==================================================================
-$logStudent =              $gLogDir & "log_elderly.txt"
+$logStudent =              $gLogDir & "\log_elderly.txt"
 $logStudenProgress = $gLogDir & "\log_elderly_progress.txt"
 $logPrice =                  $gLogDir & "\log_elderly_price.txt"
 ;===================== end log path config ==================================================================
@@ -81,6 +81,7 @@ $logPrice =                  $gLogDir & "\log_elderly_price.txt"
 $sReqPath = "query_telemed"
 ;=== end telegram  and database request config ===============================================
 Global $gAge_Y
+
 
 
 ;=== start local picture config  All Variable Use From Lib ==================================================
@@ -126,11 +127,12 @@ $ArraySit[19] = "90"  ;ชำระเงินต่างชาติ
 $ArraySit[20] = "99d"  ;รายได้น้อย นอกเขต  d=op anywhere ในจังหวัด
 
 
-Global $ArraySit30B[4] = []
+Global $ArraySit30B[5] = []
 $ArraySit30B[0] = "50"  ;12-59 นอกเขต
 $ArraySit30B[1] = "50d"  ;12-59 นอกเขต  d=op anywhere ในจังหวัด
 $ArraySit30B[2] = "56"  ;12-59 ในเขต
 $ArraySit30B[3] = "50o"  ;12-59 นอกเขต  o=op anywhere ต่างจังหวัด
+$ArraySit30B[4] = "PP"  ;บางทีเวชระเบียนส่งค่าบริการ 30 บาทมาด้วย
 
 
 ; Global $aCheckPttype[11] = ["17", "19", "21", "28", "30", "32", "37", "44", "50", "59", "99"]
@@ -594,7 +596,7 @@ Func BotLoop()
 		ChiefComp($vDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
-			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:17]")  ;TcxDBTextEdit17
+			Local $hBwCtrl = ControlGetHandle($hWndXp, "", $gInputBW)  ;TcxDBTextEdit17
 			ControlSetText($hWndXp, "", $hBwCtrl, $sBw)
 			Sleep(300)
 		EndIf

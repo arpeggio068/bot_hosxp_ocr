@@ -599,7 +599,7 @@ Func BotLoop()
         Allergy()
 		if Number($sBw) > 0 Then
 			;CtrlSendDt($hWndXp, "TcxCustomInnerTextEdit59", $sBw)
-			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:18]")  ;TcxDBTextEdit17
+			Local $hBwCtrl = ControlGetHandle($hWndXp, "", $gInputBW)
 			ControlSetText($hWndXp, "", $hBwCtrl, $sBw)
 			Sleep(300)
 		EndIf

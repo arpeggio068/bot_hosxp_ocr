@@ -1,7 +1,7 @@
-D:\pom\excel\elderly_exam_20260401.xlsx
+D:\pom\excel\gallbladder_screen_2570_export.xlsx
 data
-ออกหน่วยตรวจฟันโรงเรียนผู้สูงอายุ
+ออกหน่วยคัดกรองมะเร็งท่อน้ำดี
 1
-238
-287
-1500
+26
+26
+2000

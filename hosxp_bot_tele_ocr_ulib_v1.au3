@@ -383,7 +383,7 @@ Func BotLoop()
 		ChiefComp($vDetail ,$hStartTime, $oLogStudent, $hWndXp, $i+1)
         Allergy()
 		if Number($sBw) > 0 Then
-			Local $hBwCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxDBTextEdit; INSTANCE:18]")  ;TcxDBTextEdit18
+			Local $hBwCtrl = ControlGetHandle($hWndXp, "", $gInputBW)  ;TcxDBTextEdit18
 			ControlSetText($hWndXp, "", $hBwCtrl, $sBw)
 			Sleep(300)
 		EndIf

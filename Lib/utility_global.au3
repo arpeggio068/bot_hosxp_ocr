@@ -72,7 +72,8 @@ Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
 
 ;=== start element class and name config ================================================
 Global Const $sLockPtForm = "[CLASS:THOSxPVisitNumberLockForm]"  ; pop up other user lock
-Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:52]"  ; ปุ่มบันทึก CC
+Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:52]"  ; ปุ่มบันทึก
+Global Const $gInputBW = "[CLASS:TcxDBTextEdit; INSTANCE:18]" ; ปุ่ม input น้ำหนักตัว
 Global Const $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:31]"    ; ปุ่มเพิ่มหัตถการ
 Global Const $sOperationBoxTitle = "HOSxPDentalOperationEntryForm" ; ฟอร์มบันทึกหัตถการ THOSxPDentalOperationEntryForm
 Global Const $sBtnSaveOperation = "[CLASS:TcxButton; INSTANCE:10]"  ; ปุ่มบันทึกหัตถการ
@@ -576,7 +577,7 @@ Func GetSitFromDb2($iHnVal, $oFile, $iRow)
         Exit(1)
     EndIf
     ; Parse only the fixed three-string array produced by this endpoint.
-    Local $aResult = StringRegExp($result, '^\s*\[\s*"([0-9]+[dno]?)"\s*,\s*"(-?[0-9]+)"\s*,\s*"([0-9]+)"\s*\]\s*$', 1)
+    Local $aResult = StringRegExp($result, '^\s*\[\s*"([A-Za-z0-9]+)"\s*,\s*"(-?[0-9]+)"\s*,\s*"([0-9]+)"\s*\]\s*$', 1)
     If @error Then
         FileWrite($oFile, "Invalid API response R=" & $iRow & @CRLF)
         MsgBox(16, "API Error", "Invalid API response. Excel row: " & $iRow)
@@ -1211,18 +1212,23 @@ EndFunc
 
 ;=============================== start sit function =============================================================================
 Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
+
 	While True
-		if FindToCon($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+		Sleep(500)
+
+		If FindToCon($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
 			FindToClickRt($sOpdPrice1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
 			Sleep(1200)
-		Else
+
+		ElseIf FindToCon($sOpdPrice2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
 			FindToClickRt($sOpdPrice2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
 			Sleep(1200)
 		EndIf
-        Sleep(500)
+
 		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
 		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
+	WEnd
+
 	 Sleep(1000)
 	 ControlSend($hWndXp, "","" , "q")
 	 Sleep(1000)
@@ -1266,59 +1272,140 @@ Func SetZeroPrice($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRo
 	Return True
 EndFunc
 
+
+;~ Func SetZeroPrice30B($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
+
+;~ 	While True
+;~ 		Sleep(500)
+
+;~ 		If FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+;~ 			FindToClickRt($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+;~ 			Sleep(1200)
+
+;~ 		ElseIf FindToCon($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+;~ 			FindToClickRt($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+;~ 			Sleep(1200)
+;~ 		EndIf
+
+;~ 		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
+;~ 		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+;~ 	WEnd
+
+;~ 	 Sleep(1000)
+;~ 	 ControlSend($hWndXp, "","" , "q")
+;~ 	 Sleep(1000)
+;~ 	 Local  $hWndEdit
+;~ 	 Local $a = 1
+;~ 	 While $a < 10
+;~ 		 Sleep(1000)
+;~ 		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+;~ 		 If $hWndEdit Then
+;~ 			 Sleep(1000)
+;~ 			 ExitLoop
+;~ 		 Else
+;~ 			 ;Sleep(1000)
+;~ 			 ControlSend($hWndXp, "","" , "q")
+;~ 			 Sleep(2000)
+;~ 		 EndIf
+;~ 		 $a += 1
+;~ 	 WEnd
+;~ 	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
+;~ 	 Sleep(1000)
+;~ 	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
+;~ 	 Sleep(1200)
+;~ 		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
+;~ 	 Send("{ENTER}")
+;~ 	 ;WinClose($hWndEdit, "")
+;~ 	 Sleep(400)
+;~      FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
+;~ 	 Local $b = 1
+;~ 	 While $b < 5
+;~ 		Sleep(300)
+;~ 		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+;~ 		if($hWndEdit) Then
+;~ 			Sleep(1000)
+;~ 			ControlClick($hWndEdit, "left", "TcxButton1")
+;~ 			Sleep(1200)
+;~ 			WinClose($hWndEdit, "")
+;~ 			Sleep(400)
+;~ 		EndIf
+;~ 		$b += 1
+;~     WEnd
+;~ 	Return True
+;~ EndFunc
+
+
 Func SetZeroPrice30B($hWndXp, $hStartTime, $oLogStudent, $oLogStudentProgress, $iRow)
-	While True
-		if FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
-			FindToClickRt($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
-		Else
-			FindToClickRt($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
-			Sleep(1200)
+	Local $bFind = False
+	Local $iWait = TimerInit()
+
+	While TimerDiff($iWait) < 3000  ; find pic for 3 ms
+		Sleep(500)
+		If FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Or _
+		   FindToCon($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+			$bFind = True
+			ExitLoop
 		EndIf
-        Sleep(500)
-		If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
-		ExitMaxTime($hStartTime, $oLogStudent, $iRow)
-	 WEnd
-	 Sleep(1000)
-	 ControlSend($hWndXp, "","" , "q")
-	 Sleep(1000)
-	 Local  $hWndEdit
-	 Local $a = 1
-	 While $a < 10
+	WEnd
+
+	If $bFind Then
+		While True
+			Sleep(500)
+			if FindToCon($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+				FindToClickRt($sOpdPrice30_1, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+				Sleep(1200)
+			ElseIf FindToCon($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75) Then
+				FindToClickRt($sOpdPrice30_2, $aOpdPricePos[0], $aOpdPricePos[1], $aOpdPricePos[2], $aOpdPricePos[3], 0.75)
+				Sleep(1200)
+			EndIf
+			Sleep(500)
+			If FindToCon($sEditPrice, $aEditPricePos[0], $aEditPricePos[1], $aEditPricePos[2], $aEditPricePos[3], 0.75) Then ExitLoop ;Text Inv Setting
+			ExitMaxTime($hStartTime, $oLogStudent, $iRow)
+		WEnd
+
+		Sleep(1000)
+		 ControlSend($hWndXp, "","" , "q")
 		 Sleep(1000)
-		 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		 If $hWndEdit Then
+		 Local  $hWndEdit
+		 Local $a = 1
+		 While $a < 10
 			 Sleep(1000)
-			 ExitLoop
-		 Else
-			 ;Sleep(1000)
-			 ControlSend($hWndXp, "","" , "q")
-			 Sleep(2000)
-		 EndIf
-		 $a += 1
-	 WEnd
-	ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
-	 Sleep(1000)
-	 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
-	 Sleep(1200)
-		;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
-	 Send("{ENTER}")
-	 Sleep(400)
-	 ;WinClose($hWndEdit, "")
-     FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
-	 Local $b = 1
-	 While $b < 5
-		Sleep(300)
-		$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
-		if($hWndEdit) Then
-			Sleep(1000)
-			ControlClick($hWndEdit, "left", "TcxButton1")
-			Sleep(1200)
-			WinClose($hWndEdit, "")
-			Sleep(400)
-		EndIf
-		$b += 1
-    WEnd
+			 $hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+			 If $hWndEdit Then
+				 Sleep(1000)
+				 ExitLoop
+			 Else
+				 ;Sleep(1000)
+				 ControlSend($hWndXp, "","" , "q")
+				 Sleep(2000)
+			 EndIf
+			 $a += 1
+		 WEnd
+		ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{DELETE}")
+		 Sleep(1000)
+		 ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2", "0")
+		 Sleep(1200)
+			;ControlSend($hWndEdit, "","TcxCustomInnerTextEdit2","{ENTER}")
+		 Send("{ENTER}")
+		 Sleep(400)
+		 ;WinClose($hWndEdit, "")
+		 FileWrite($oLogStudentProgress, "Set 0 Price Success R= "&$iRow&@CRLF)
+		 Local $b = 1
+		 While $b < 5
+			Sleep(300)
+			$hWndEdit = WinGetHandle("HOSxPMedicationOrderItemPriceEditForm")
+			if($hWndEdit) Then
+				Sleep(1000)
+				ControlClick($hWndEdit, "left", "TcxButton1")
+				Sleep(1200)
+				WinClose($hWndEdit, "")
+				Sleep(400)
+			EndIf
+			$b += 1
+		WEnd
+
+	EndIf
+
 	Return True
 EndFunc
 ;===============================  end sit function =============================================================================
