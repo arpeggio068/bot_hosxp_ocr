@@ -72,6 +72,7 @@ Global Const $sOcrUrl = "http://127.0.0.1:3078"  ; node server use 3074
 
 ;=== start element class and name config ================================================
 Global Const $sLockPtForm = "[CLASS:THOSxPVisitNumberLockForm]"  ; pop up other user lock
+Global Const $sHnBoxVertical = "[CLASS:TcxGroupBox; INSTANCE:1]"
 Global Const $sBtnSaveCC = "[CLASS:TcxButton; INSTANCE:52]"  ; ปุ่มบันทึก CC
 Global Const $gInputBW = "[CLASS:TcxDBTextEdit; INSTANCE:18]" ; ปุ่ม input น้ำหนักตัว
 Global Const $sBtnAddOperation = "[CLASS:TcxButton; INSTANCE:31]"    ; ปุ่มเพิ่มหัตถการ
@@ -841,7 +842,7 @@ EndFunc
 
 Func SetHnBox($hWndXp)
     ; เลือกเฉพาะ TcxGroupBox Instance 1
-    Local $hCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxGroupBox; INSTANCE:1]") ;ด้านขวาของ list คนไข้ เส้นแนวตั้งสีฟ้าข้างๆ ไม่ใช่ตาราง grid
+    Local $hCtrl = ControlGetHandle($hWndXp, "", $sHnBoxVertical) ;ด้านขวาของ list คนไข้ เส้นแนวตั้งสีฟ้าข้างๆ ไม่ใช่ตาราง grid
     Local $aPos = ControlGetPos($hWndXp, "", $hCtrl)
     ;MsgBox(0, "HN Box Pos", "x=" & $aPos[0] & ", y=" & $aPos[1] & ", w=" & $aPos[2] & ", h=" & $aPos[3])
     If $aPos[0] <> 0 Or $aPos[1] <> 125 Or $aPos[2] <> 400 Or $aPos[3] <> 676 Then

@@ -268,8 +268,9 @@ EndFunc
 
 
 _CppDllOpen()
-;Local $hTestWnd = WinGetHandle($sHosXp_Title)
+Local $hTestWnd = WinGetHandle($sHosXp_Title)
+SetHnBox($hTestWnd)
 ;Ctrl_F2($hTestWnd)
-KillFinance2()
+;KillFinance2()
 _CppDllClose()
 Exit(0)
